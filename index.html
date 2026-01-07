@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos</title> 
+     <title>Flying Cheetos: v7.2 Matrix Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
      <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet'> 
-     
+     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+      
      <style> 
          /* --- CSS STYLES --- */
          body { 
@@ -27,7 +29,18 @@
              box-shadow: 0 0 30px rgba(138, 43, 226, 0.3); 
              border: 2px solid #333;
              background-color: #000;
+             transition: transform 0.5s ease; 
          } 
+
+         /* BOSS 2 CHAOS CLASSES */
+         .upside-down { transform: rotate(180deg); }
+         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite; }
+         @keyframes shake {
+             10%, 90% { transform: translate3d(-1px, 0, 0) rotate(180deg); }
+             20%, 80% { transform: translate3d(2px, 0, 0) rotate(180deg); }
+             30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(180deg); }
+             40%, 60% { transform: translate3d(4px, 0, 0) rotate(180deg); }
+         }
 
          canvas { 
              display: block;
@@ -37,785 +50,1334 @@
              image-rendering: pixelated;
          }
 
+         /* DELETE BUTTON BOSS MECHANIC */
+         #delete-boss-btn {
+             display: none; 
+             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+             background-color: red; color: white;
+             font-family: 'Press Start 2P', cursive; font-size: 20px;
+             padding: 15px 30px; border: 4px solid white; cursor: pointer;
+             z-index: 100; box-shadow: 0 0 15px red; animation: bossPulse 0.5s infinite;
+         }
+         #delete-boss-btn:active { background-color: darkred; transform: translateX(-50%) scale(0.95); }
+
          /* MOBILE SCALING */
          @media (max-width: 640px) {
-             #game-container {
-                 width: 100vw;
-                 height: 75vw; 
-             }
+             #game-container { width: 100vw; height: 75vw; }
              #landing-page h1 { font-size: 35px !important; }
              .update-badge { font-size: 14px !important; }
          }
 
+         /* MAIN MENU */
          #landing-page { 
-             position: absolute; 
-             top: 0; left: 0; 
+             position: absolute; top: 0; left: 0; 
              width: 100%; height: 100%; 
-             background: url('http://s2js.com/img/etc/flappyback.png');
-             background-size: cover;
-             display: flex; 
-             flex-direction: column; 
-             align-items: center; 
-             justify-content: center; 
-             z-index: 10; 
+             background: url('http://s2js.com/img/etc/flappyback.png'); background-size: cover;
+             display: flex; flex-direction: column; 
+             align-items: center; justify-content: center; z-index: 10; 
          } 
 
          .update-badge {
              background: linear-gradient(45deg, #8A2BE2, #4B0082); 
-             color: #FFD700; 
-             padding: 8px 20px;
-             border-radius: 5px;
-             font-size: 20px;
-             margin-bottom: 10px;
-             text-transform: uppercase;
-             letter-spacing: 3px;
-             animation: bossPulse 1s infinite;
-             border: 2px solid #FFD700;
-             font-family: 'Arial Black', sans-serif;
+             color: #FFD700; padding: 8px 20px; border-radius: 5px;
+             font-size: 20px; margin-bottom: 5px; text-transform: uppercase;
+             letter-spacing: 3px; animation: bossPulse 1s infinite;
+             border: 2px solid #FFD700; font-family: 'Arial Black', sans-serif;
          }
 
          #landing-page h1 { 
-             color: #FF4500; 
-             font-size: 60px; 
-             text-shadow: 4px 4px 0px #fff;
-             margin: 0;
+             color: #FF4500; font-size: 60px; text-shadow: 4px 4px 0px #fff; margin: 0;
          } 
 
-         .preview-img { 
-             width: 80px; 
-             margin: 20px 0;
-             animation: float 2s infinite ease-in-out; 
-         } 
+         /* MENU UI */
+         .menu-stats {
+             display: flex; gap: 20px; margin: 10px 0;
+             font-family: 'Roboto', sans-serif; font-weight: bold;
+             background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; border: 2px solid white;
+         }
+         .stat-box { color: white; font-size: 18px; text-align: center; }
+         .stat-val { color: gold; font-size: 22px; }
+
+         .menu-buttons {
+             display: flex; flex-direction: column; gap: 10px; margin-top: 10px;
+         }
 
          .enter-btn { 
-             padding: 15px 40px; 
-             font-size: 24px; 
-             background-color: #f7941d; 
-             color: white; 
-             border: 4px solid #fff; 
-             border-radius: 50px; 
-             cursor: pointer; 
-             font-family: 'Pacifico', cursive; 
-             transition: transform 0.2s; 
-             box-shadow: 0 6px 0px #d35400;
-             -webkit-tap-highlight-color: transparent; 
+             padding: 10px 30px; font-size: 24px; 
+             background-color: #f7941d; color: white; 
+             border: 3px solid #fff; border-radius: 50px; cursor: pointer; 
+             font-family: 'Pacifico', cursive; transition: transform 0.2s; 
+             box-shadow: 0 4px 0px #d35400; width: 250px;
+         } 
+         .enter-btn:active { transform: translateY(4px); box-shadow: none; }
+
+         .secondary-btn {
+             background-color: #3498db; font-size: 18px; box-shadow: 0 4px 0px #2980b9;
+         }
+         
+         .preview-img { 
+             width: 60px; margin: 5px 0; animation: float 2s infinite ease-in-out; 
          } 
 
          .version-text {
-             position: absolute;
-             bottom: 10px; right: 15px;
-             color: rgba(255, 255, 255, 0.6);
-             font-family: sans-serif; font-size: 14px;
+             position: absolute; bottom: 10px; right: 15px;
+             color: rgba(255, 255, 255, 0.6); font-family: sans-serif; font-size: 14px;
+         }
+
+         /* MODALS */
+         .modal {
+             display: none; position: absolute; top: 50%; left: 50%;
+             transform: translate(-50%, -50%); width: 80%; height: 80%;
+             background: rgba(0, 0, 0, 0.9); border: 4px solid white;
+             border-radius: 15px; z-index: 20; padding: 20px;
+             box-sizing: border-box; overflow-y: auto; font-family: 'Roboto', sans-serif;
+         }
+         
+         .modal h2 { color: #f7941d; text-align: center; margin-top: 0; font-family: 'Pacifico', cursive; font-size: 30px;}
+         .close-btn {
+             position: absolute; top: 10px; right: 10px;
+             background: red; color: white; border: none;
+             padding: 5px 10px; cursor: pointer; font-weight: bold; border-radius: 5px;
+         }
+
+         /* ACHIEVEMENTS LIST */
+         .achievement-item {
+             background: #333; margin-bottom: 10px; padding: 10px;
+             border-radius: 8px; border-left: 5px solid #555;
+             display: flex; justify-content: space-between; align-items: center;
+         }
+         .achievement-item.unlocked { background: #2ecc71; border-left: 5px solid #27ae60; color: #000; }
+         .ach-title { font-weight: bold; font-size: 16px; color: white; }
+         .achievement-item.unlocked .ach-title { color: black; }
+         .ach-desc { font-size: 12px; color: #ccc; }
+         .achievement-item.unlocked .ach-desc { color: #333; }
+
+         /* SUGGESTIONS FORM */
+         textarea {
+             width: 100%; height: 150px;
+             background: #222; color: white;
+             border: 1px solid #555; padding: 10px;
+             font-family: sans-serif; resize: none; margin-bottom: 10px;
+             z-index: 1000; position: relative;
+         }
+         .send-btn {
+             width: 100%; padding: 10px;
+             background: #f7941d; border: none; color: white;
+             font-weight: bold; cursor: pointer;
+         }
+
+         /* CHEAT CODE FEEDBACK */
+         #cheat-feedback {
+             position: absolute; top: 20%; width: 100%; text-align: center;
+             font-size: 40px; color: lime; font-family: 'Arial Black', sans-serif;
+             display: none; text-shadow: 2px 2px 0 #000; z-index: 100;
+         }
+         
+         /* AUDIO DEBUG DISPLAY */
+         #audio-status {
+             position: absolute; top: 5px; left: 5px;
+             color: red; font-weight: bold; background: rgba(0,0,0,0.7);
+             padding: 5px; border-radius: 5px; font-family: sans-serif; font-size: 12px; z-index: 50;
          }
 
          @keyframes float { 
              0%, 100% { transform: translateY(0); } 
              50% { transform: translateY(-25px); } 
          } 
-
          @keyframes bossPulse {
-             0% { transform: scale(1); }
-             50% { transform: scale(1.1); }
-             100% { transform: scale(1); }
+             0% { transform: scale(1); } 
+             50% { transform: scale(1.1); } 
+             100% { transform: scale(1); } 
          }
      </style> 
  </head> 
  <body> 
 
      <div id="game-container"> 
+         <button id="delete-boss-btn" onclick="hitBossTwo()">DELETE</button>
+
+         <div id="cheat-feedback">CODE REDEEMED!</div>
+         <div id="audio-status">Audio: Initializing...</div>
+         
          <div id="landing-page"> 
-             <div class="update-badge">BOSS UPDATE</div>
+             <div class="update-badge">VOID UPDATE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos"> 
              
-             <button class="enter-btn" onmousedown="startGame()" ontouchstart="startGame()">ENTER GAME</button> 
+             <div class="menu-stats">
+                 <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
+                 <div class="stat-box">Stars<br><span class="stat-val" id="menuStars">0</span></div>
+             </div>
+
+             <div class="menu-buttons">
+                 <button class="enter-btn" onclick="startGame()">PLAY GAME</button> 
+                 <button class="enter-btn secondary-btn" onclick="openShopFromMenu()">SHOP</button>
+                 <button class="enter-btn secondary-btn" onclick="openAchievements()">ACHIEVEMENTS</button>
+                 <button class="enter-btn secondary-btn" style="background-color: #8e44ad; box-shadow: 0 4px 0 #6c3483;" onclick="openSuggestions()">SUGGESTIONS</button>
+             </div>
              
-             <div class="version-text">v2.2 Mobile Touch</div>
+             <div class="version-text">v7.2 Matrix Fix</div>
+
+             <div id="achievementsModal" class="modal">
+                 <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
+                 <h2>Achievements</h2>
+                 <div id="achievementsList"></div>
+             </div>
+
+             <div id="suggestionsModal" class="modal">
+                 <button class="close-btn" onclick="closeModal('suggestionsModal')">X</button>
+                 <h2>Suggestions</h2>
+                 <p style="color:white; font-size:14px; text-align:center;">Have an idea? Send it to me!</p>
+                 <textarea id="suggestionText" placeholder="Type your suggestion here..."></textarea>
+                 <button class="send-btn" onclick="sendSuggestion()">SEND SUGGESTION</button>
+             </div>
+
          </div> 
 
          <canvas id="myCanvas" width="640" height="480"></canvas> 
      </div> 
 
      <script>
-        // Global variables defined first
+        // ==========================================
+        //         GLOBAL VARIABLES & CONFIG
+        // ==========================================
         var game_mode = 'waiting_for_website'; 
-        var myCanvas;
-        var ctx;
+        var myCanvas, ctx;
+        var gameInterval = null; 
+        var FPS = 40;
+        const CANVAS_WIDTH = 640; 
+        
+        // --- ASSETS ---
+        const BOSS_IMG = new Image(); BOSS_IMG.src = 'boss.png'; 
+        const BOSS2_IMG = new Image(); BOSS2_IMG.src = 'boss_2.png'; 
+        const CHOCO_IMG = new Image(); CHOCO_IMG.src = 'chocolate.png'; 
+        const SHIELD_IMG = new Image(); SHIELD_IMG.src = 'shield.png'; 
+        const SHIELDED_BIRD_IMG = new Image(); SHIELDED_BIRD_IMG.src = 'player_shielded.png'; 
+        const POTION_IMG = new Image(); POTION_IMG.src = 'potion.png';
+        const SLOW_POTION_IMG = new Image(); SLOW_POTION_IMG.src = 'slow_potion.png'; 
+        const STAR_IMG = new Image(); STAR_IMG.src = 'star.png'; 
+        var bottom_bar = new Image(); bottom_bar.src = 'red.png';
+        var pipe_piece = new Image(); pipe_piece.src = 'wall.png';
+        
+        const backgroundImages = [];
+        for (let i = 1; i <= 5; i++) {
+            let img = new Image(); img.src = `bg${i}.png`; backgroundImages.push(img);
+        }
 
-        // This function is Global so the HTML button can find it instantly
+        // --- AUDIO SYSTEM ---
+        const flapSound = new Audio('woof.mp3');
+        flapSound.load(); flapSound.volume = 0.25; 
+
+        const bgMusic = new Audio('bg_song.mp3');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+        
+        const voidMusic = new Audio('void.mp3');
+        voidMusic.loop = true;
+        voidMusic.volume = 0.5;
+
+        function updateAudioStatus(msg, color) {
+            let el = document.getElementById('audio-status');
+            el.innerText = msg;
+            el.style.color = color || 'white';
+        }
+        let musicMuted = false;
+
+        // --- GAME VARIABLES ---
+        let boss = { x: CANVAS_WIDTH + 100, y: 100, width: 150, height: 150, stamina: 100, speedY: 2, movingIn: true };
+        let chocolates = [];
+        let victoryTimer = 0; 
+        let deathMessage = "Game Over"; 
+        
+        // Boss Intro Variables
+        let bossIntroState = 0; 
+        let bossIntroTimer = 0;
+
+        // Boss 2 Specifics
+        let isBoss2 = false;
+        let boss2Hits = 0; 
+        const BOSS2_MAX_HITS = 5;
+        let deleteBtnTimer = 0;
+        let deleteBtnSpawnTimer = 0;
+        let errorSigns = []; 
+        let errorSignCooldown = 0; 
+        let chaosTimer = 0; 
+
+        // Ending Sequence
+        let endSequenceStep = 0;
+        let endSequenceTimer = 0;
+        let endSequenceAlpha = 0;
+        const END_TEXTS = [
+            "where do you think youre going?",
+            "maybe to another world?",
+            "maybe youll continue endlessly?",
+            "or maybe even going back to the start",
+            "HELLO WORLD",
+            "TO BE CONTINUED..."
+        ];
+
+        const AREA_NAMES = [ "The Beginning", "The SKY", "The SUNSET", "The NIGHT", "The VOID" ];
+        const GLITCH_TEXTS = ["thats not the reality", "404", "not found", "wake up", "null", "error"];
+        let currentBGIndex = 0;
+        let transitionText = "";
+        let transitionTimer = 0;
+        let flashColor = null;
+        let flashTimer = 0;
+        let levelReached = 1; 
+
+        // --- CHEAT CODES VARIABLES ---
+        let cheatBuffer = "";
+        let redeemedCodes = [];
+        try {
+            redeemedCodes = JSON.parse(localStorage.getItem('flappyRedeemed')) || [];
+        } catch(e) {}
+
+        // --- PHYSICS ---
+        var jump_amount = -7; var max_fall_speed = +8; var acceleration = 0.6;      
+        const SUPER_JUMP_AMOUNT = -3.8; const SUPER_ACCELERATION = 0.18; const SUPER_MAX_FALL_SPEED = +3.5;     
+        const MAGNET_RADIUS = 100; 
+        const INITIAL_LIVES = 3; 
+        let currentLives = 0; 
+        const MAX_DESTROY_CHARGES = 2;
+        let wallDestroyCharges = 0;
+        const WALLS_TO_DESTROY = 2; 
+        
+        // SPEED LOGIC
+        let pipe_speed = -2;
+        let currentSpawnInterval = 2500; // ms
+        let speedMultiplier = 1; // NEW: Controls global time scale for items/enemies
+
+        var time_game_last_running;
+        var bottom_bar_offset = 0;
+        var pipes = [];
+        var pipe_spawn_timer = 0;
+        
+        let currentScore = 0; 
+
+        // --- POWER UPS & TIMERS ---
+        const SHIELD_DURATION_MS = 6000; const SHIELD_SPAWN_CHANCE = 0.10; 
+        let isShieldActive = false; let shieldTimeoutID = null; let shields = []; let shieldEndTime = 0;
+        const SHIELD_WIDTH = 64; const SHIELD_HEIGHT = 64; 
+
+        const POTION_DURATION_MS = 15000; const POTION_SPAWN_CHANCE = 0.10; 
+        let isDoubleStarsActive = false; let potionTimeoutID = null; let potions = []; let doubleStarEndTime = 0;
+        const POTION_WIDTH = 30; const POTION_HEIGHT = 30;
+
+        const SLOW_POTION_DURATION_MS = 10000; const SLOW_POTION_SPAWN_CHANCE = 0.08; 
+        let isSlowMotionActive = false; let slowPotionTimeoutID = null; let slowPotions = []; let slowMoEndTime = 0;
+        const SLOW_POTION_WIDTH = 30; const SLOW_POTION_HEIGHT = 30;
+
+        // --- SKINS, TRAILS & STARS ---
+        let collectedStars = 0;
+        let stars = []; 
+        const STAR_WIDTH = 20; const STAR_HEIGHT = 20; const STAR_VALUE = 1; const STAR_SPAWN_CHANCE = 0.5; 
+
+        // SKINS DATA
+        const SKINS = {
+            'default': { src: 'player.png', cost: 0, current: true, name: 'Original Cheetos' }, 
+            'red':     { src: 'player_red.png', cost: 30, current: false, name: 'Cute Cheetos' },
+            'tough':   { src: 'player_tough.png', cost: 150, current: false, name: 'Tough Cheetos' }, 
+            'rich':    { src: 'player_rich.png', cost: 150, current: false, name: 'Rich Cheetos' }, 
+            'happy':   { src: 'player_happy.png', cost: 250, current: false, name: 'Happy Cheetos' }, 
+            'yellow':  { src: 'player_yellow.png', cost: 300, current: false, name: 'Terrorist Cheetos' }, 
+            'black':   { src: 'player_black.png', cost: 650, current: false, name: 'Legendary Cheetos' } 
+        };
+
+        // TRAILS DATA
+        const TRAILS = {
+            'none':    { color: 'none', cost: 0, current: true, name: 'No Trail' },
+            'blue':    { color: '#00ccff', cost: 30, current: false, name: 'Blue Trail' },
+            'red':     { color: '#ff3333', cost: 30, current: false, name: 'Red Trail' },
+            'green':   { color: '#33ff33', cost: 30, current: false, name: 'Green Trail' },
+            'purple':  { color: '#bf00ff', cost: 40, current: false, name: 'Purple Trail' },
+            'rainbow': { color: 'rainbow', cost: 70, current: false, name: 'Rainbow Trail' }
+        };
+        let trailHistory = []; 
+        let shopCategory = 'skins'; 
+
+        // --- STORAGE LOADING ---
+        try { if (localStorage.getItem('flappyStars')) collectedStars = parseInt(localStorage.getItem('flappyStars')); } catch(e) {}
+        
+        let availableSkins = ['default'];
+        try { availableSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['default']; } catch(e) {}
+        let currentSkinKey = 'default';
+        try {
+            if (localStorage.getItem('currentSkin')) {
+                currentSkinKey = localStorage.getItem('currentSkin');
+                for (const key in SKINS) { SKINS[key].current = false; }
+                if (SKINS[currentSkinKey]) { SKINS[currentSkinKey].current = true; }
+            }
+        } catch(e) {}
+
+        let availableTrails = ['none'];
+        try { availableTrails = JSON.parse(localStorage.getItem('flappyTrails')) || ['none']; } catch(e) {}
+        let currentTrailKey = 'none';
+        try {
+            if (localStorage.getItem('currentTrail')) {
+                currentTrailKey = localStorage.getItem('currentTrail');
+                for (const key in TRAILS) { TRAILS[key].current = false; }
+                if (TRAILS[currentTrailKey]) { TRAILS[currentTrailKey].current = true; }
+            }
+        } catch(e) {}
+
+        // --- ACHIEVEMENTS DATA ---
+        const ALL_ACHIEVEMENTS = [
+            { id: 'beginner', title: 'Beginner', desc: 'Score more than 10', unlocked: false },
+            { id: 'hang', title: 'Getting the hang of it', desc: 'Score more than 20', unlocked: false },
+            { id: 'sunset', title: 'It was a beautiful SUNSET', desc: 'Score more than 30', unlocked: false },
+            { id: 'void', title: 'THE VOID?', desc: 'Score more than 40', unlocked: false },
+            { id: 'monster', title: 'YOU MONSTER!', desc: 'Kill the first Boss', unlocked: false },
+            { id: 'interesting', title: 'INTERESTING!', desc: '???', unlocked: false },
+            { id: 'true_end', title: 'THE TRUE END', desc: '???', unlocked: false }
+        ];
+        let savedAchievements = [];
+        try {
+            savedAchievements = JSON.parse(localStorage.getItem('flappyAchievements')) || [];
+            ALL_ACHIEVEMENTS.forEach(ach => { if (savedAchievements.includes(ach.id)) ach.unlocked = true; });
+        } catch(e) {}
+        let highScore = 0;
+        try { highScore = parseInt(localStorage.getItem('flappyHighScore')) || 0; } catch(e) {}
+
+        // ==========================================
+        //           HELPER CLASSES & FUNCTIONS
+        // ==========================================
+
+        function MySprite(img_url) {
+            this.x = 0; this.y = 0; this.visible = true; 
+            this.velocity_x = 0; this.velocity_y = 0;
+            this.MyImg = new Image(); this.MyImg.src = img_url || '';
+            this.angle = 0; this.flipV = false; this.flipH = false; this.passed = false; 
+            this.isText = false; this.text = ""; 
+            this.isError = false; 
+            // Void movement properties
+            this.oscillate = false;
+            this.baseY = 0;
+            this.phase = 0;
+        }
+
+        MySprite.prototype.Do_Frame_Things = function () {
+            // OSCILLATION FOR VOID PIPES & ITEMS
+            if (this.oscillate && (this.isText || this.MyImg.complete)) {
+                 this.y = this.baseY + Math.sin((Date.now() + this.phase) / 400) * 40;
+            }
+
+            // DETERMINE SPEED MULTIPLIER
+            // If it's the bird, ignore the slow motion multiplier (Player is fast)
+            // If it's anything else (pipe, enemy, background), apply slow motion
+            let mult = (this === bird) ? 1 : speedMultiplier;
+
+            if (this.isText) {
+                ctx.font = "bold 30px 'Courier New'"; ctx.fillStyle = "#00ff00"; ctx.fillText(this.text, this.x, this.y + 30);
+                this.x += this.velocity_x * mult; return; // Y is handled by oscillate
+            }
+            if (this.isError) {
+                ctx.fillStyle = "red"; ctx.fillRect(this.x, this.y, 100, 100);
+                ctx.font = "bold 20px Arial"; ctx.fillStyle = "white"; ctx.fillText("ERROR", this.x + 15, this.y + 55);
+                this.x += this.velocity_x * mult; this.y += this.velocity_y * mult; return;
+            }
+
+            if (!this.MyImg.complete || this.MyImg.naturalWidth === 0) return; 
+            
+            // --- DRAW TRAIL ---
+            if (this === bird && currentTrailKey !== 'none' && (game_mode === 'running' || game_mode === 'boss')) {
+                // 1. Push new point at the TAIL (Left side)
+                trailHistory.push({
+                    x: this.x + 5, 
+                    y: this.y + this.MyImg.height / 2
+                });
+
+                if (trailHistory.length > 25) trailHistory.shift(); 
+
+                // 2. Move existing points LEFT to simulate speed
+                // Note: Trail movement should probably look like world movement, so apply mult
+                for(let i=0; i<trailHistory.length; i++) {
+                    trailHistory[i].x += pipe_speed * mult; 
+                }
+
+                if (trailHistory.length > 1) {
+                    ctx.beginPath();
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    
+                    if (TRAILS[currentTrailKey].color === 'rainbow') {
+                        let hue = (Date.now() / 5) % 360;
+                        ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                    } else {
+                        ctx.strokeStyle = TRAILS[currentTrailKey].color;
+                    }
+
+                    ctx.moveTo(trailHistory[0].x, trailHistory[0].y);
+                    for (let i = 1; i < trailHistory.length; i++) {
+                        ctx.lineTo(trailHistory[i].x, trailHistory[i].y);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            ctx.save();
+            ctx.translate(this.x + this.MyImg.width / 2, this.y + this.MyImg.height / 2);
+            ctx.rotate((this.angle * Math.PI) / 180);
+            if (this.flipV) ctx.scale(1, -1);
+            if (this.flipH) ctx.scale(-1, 1);
+            
+            // Shield Aura
+            if (isShieldActive && this === bird) {
+                ctx.beginPath(); ctx.arc(0, 0, this.MyImg.width / 2 + 5, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; ctx.fill(); ctx.closePath();
+            }
+            if (this.visible) ctx.drawImage(this.MyImg, -this.MyImg.width / 2, -this.MyImg.height / 2);
+            
+            // APPLY MOVEMENT
+            this.x = this.x + this.velocity_x * mult;
+            if (!this.oscillate) this.y = this.y + this.velocity_y * mult;
+            
+            ctx.restore();
+        };
+
+        // Initialize Bird Global
+        var bird = new MySprite(SKINS[currentSkinKey].src);
+
+        function ImagesTouching(thing1, thing2) {
+            if (!thing1.visible || !thing2.visible) return false; 
+            
+            let w1, h1, w2, h2;
+            if (thing1.MyImg.complete) { w1 = thing1.MyImg.width; h1 = thing1.MyImg.height; } else { w1 = 30; h1 = 30; }
+            if (thing2.isText) { w2 = 180; h2 = 40; } 
+            else if (thing2.isError) { w2 = 100; h2 = 100; } 
+            else if (thing2.MyImg.complete) { w2 = thing2.MyImg.width; h2 = thing2.MyImg.height; }
+            else { w2 = thing2.width || 50; h2 = thing2.height || 50; }
+
+            if (thing1.x >= thing2.x + w2 || thing1.x + w1 <= thing2.x) return false;
+            if (thing1.y >= thing2.y + h2 || thing1.y + h1 <= thing2.y) return false;
+            return true;
+        }
+
+        // ==========================================
+        //           CORE GAME LOGIC
+        // ==========================================
+
+        window.hitBossTwo = function() {
+            if (!isBoss2 || game_mode !== 'boss' || deleteBtnTimer <= 0) return;
+            boss2Hits++; playPowerUpSound();
+            document.getElementById('delete-boss-btn').style.display = 'none';
+            deleteBtnTimer = 0; triggerFlash("red");
+            if (boss2Hits >= BOSS2_MAX_HITS) {
+                 bossIntroState = 4; bossIntroTimer = 150; 
+                 document.getElementById('game-container').className = "";
+            }
+        }
+
+        function triggerFlash(color) { flashColor = color; flashTimer = 10; }
+        function updateMenuStats() {
+            if(document.getElementById('menuHighScore')) {
+                document.getElementById('menuHighScore').innerText = highScore;
+                document.getElementById('menuStars').innerText = collectedStars;
+            }
+        }
+        function showCheatFeedback(text) {
+            let el = document.getElementById('cheat-feedback');
+            el.innerText = text; el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 2000);
+        }
+        function unlockAchievement(id) {
+            let ach = ALL_ACHIEVEMENTS.find(a => a.id === id);
+            if (ach && !ach.unlocked) {
+                ach.unlocked = true; savedAchievements.push(id);
+                localStorage.setItem('flappyAchievements', JSON.stringify(savedAchievements));
+            }
+        }
+
+        // --- GLOBAL BUTTON FUNCTIONS ---
         window.startGame = function() {
             var landing = document.getElementById('landing-page');
             if(landing) {
-                landing.style.display = 'none';
-                game_mode = 'prestart';
-                if (typeof flapSound !== 'undefined' && flapSound.context && flapSound.context.state === 'suspended') {
-                    flapSound.context.resume();
+                landing.style.display = 'none'; reset_game(); game_mode = 'running'; 
+                if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
+            }
+        }
+
+        window.toggleMusic = function() {
+            musicMuted = !musicMuted;
+            if (musicMuted) { bgMusic.pause(); voidMusic.pause(); updateAudioStatus("Muted", "yellow"); } 
+            else { 
+                if (currentBGIndex === 4) voidMusic.play(); else bgMusic.play(); 
+                updateAudioStatus("Playing", "lime"); 
+            }
+        }
+
+        window.openShopFromMenu = function() {
+             document.getElementById('landing-page').style.display = 'none';
+             game_mode = 'shop_from_menu'; 
+        }
+
+        window.openAchievements = function() {
+            const list = document.getElementById('achievementsList');
+            list.innerHTML = '';
+            ALL_ACHIEVEMENTS.forEach(ach => {
+                let div = document.createElement('div');
+                div.className = 'achievement-item ' + (ach.unlocked ? 'unlocked' : 'locked');
+                div.innerHTML = `<div><div class="ach-title">${ach.title} ${ach.unlocked ? '✅' : '🔒'}</div><div class="ach-desc">${ach.desc}</div></div>`;
+                list.appendChild(div);
+            });
+            document.getElementById('achievementsModal').style.display = 'block';
+        }
+        
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
+        window.openSuggestions = function() { document.getElementById('suggestionsModal').style.display = 'block'; }
+        window.sendSuggestion = function() { window.location.href = `mailto:email@example.com`; closeModal('suggestionsModal'); }
+
+        function spawnChocolate() {
+            let choc = new MySprite(); choc.MyImg = CHOCO_IMG;
+            choc.x = boss.x; choc.y = boss.y + boss.height/2;
+            choc.velocity_x = -6; choc.velocity_y = (bird.y - boss.y) / 40; 
+            chocolates.push(choc);
+        }
+
+        function spawnErrorSign() {
+            let err = new MySprite(); err.isError = true;
+            err.x = CANVAS_WIDTH; err.y = Math.random() * (480 - 100);
+            err.velocity_x = -9; errorSigns.push(err);
+        }
+
+        function drawDialogueBox(text) {
+            const boxX = 40; const boxY = myCanvas.height - 150; const boxW = myCanvas.width - 80; const boxH = 120;
+            ctx.fillStyle = "black"; ctx.fillRect(boxX, boxY, boxW, boxH);
+            ctx.strokeStyle = "white"; ctx.lineWidth = 4; ctx.strokeRect(boxX, boxY, boxW, boxH);
+            ctx.font = '15px "Press Start 2P", cursive'; ctx.fillStyle = "white"; ctx.textAlign = "left";
+            
+            // SPLIT TEXT LOGIC FOR BOSS 2 ENDING
+            if (text.includes("\n")) {
+                let lines = text.split("\n");
+                ctx.fillText("* " + lines[0], boxX + 20, boxY + 45);
+                ctx.fillText("  " + lines[1], boxX + 20, boxY + 85);
+            } else {
+                ctx.fillText("* " + text, boxX + 20, boxY + 60);
+            }
+        }
+
+        function drawGlitchText(text, alpha) {
+            const cx = myCanvas.width / 2; const cy = myCanvas.height / 2;
+            ctx.textAlign = "center"; 
+            ctx.font = '18px "Press Start 2P"'; // Reduced size to fit
+            let rx = (Math.random() - 0.5) * 5; let ry = (Math.random() - 0.5) * 5;
+            ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.7})`; ctx.fillText(text, cx + rx + 2, cy + ry);
+            ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.7})`; ctx.fillText(text, cx - rx - 2, cy - ry);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`; ctx.fillText(text, cx, cy);
+        }
+
+        function updateBoss() {
+            if (boss.movingIn) {
+                boss.x -= 2 * speedMultiplier; 
+                if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false;
+                let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG;
+                if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+                return; 
+            }
+
+            if (bossIntroState < 4) {
+                let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG;
+                if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+                if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
+                if (!isBoss2) {
+                    if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} }
+                    else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } 
+                } else {
+                    if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} }
+                    else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} }
+                    else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } 
+                }
+                return;
+            }
+
+            if (bossIntroState === 4) {
+                 let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG;
+                 if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+                 // MULTILINE FIX:
+                 drawDialogueBox("YOU ARE MAKING A\nBIG MISTAKE");
+                 bossIntroTimer--;
+                 if (bossIntroTimer <= 0) {
+                     unlockAchievement('true_end'); collectedStars += 500; 
+                     localStorage.setItem('flappyStars', collectedStars); game_mode = 'true_end_sequence';
+                     endSequenceStep = -1; endSequenceTimer = 200; endSequenceAlpha = 0;
+                 }
+                 return;
+            }
+
+            boss.y += boss.speedY * speedMultiplier;
+            if (boss.y > 300 || boss.y < 50) boss.speedY *= -1;
+            let fightImg = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG;
+            if (fightImg.complete) ctx.drawImage(fightImg, boss.x, boss.y, boss.width, boss.height);
+
+            if (!isBoss2) {
+                if (Math.random() < 0.06) spawnChocolate();
+                boss.stamina -= 0.1;
+                if (boss.stamina <= 0) {
+                    unlockAchievement('monster'); triggerFlash("lime"); 
+                    collectedStars += 100; localStorage.setItem('flappyStars', collectedStars);
+                    showCheatFeedback("BOSS DEFEATED! +100 STARS");
+                    victoryTimer = 100; game_mode = 'running'; currentScore = 51; 
+                    boss.x = CANVAS_WIDTH + 500; chocolates = []; pipe_spawn_timer = 0; bossIntroState = 0; boss.movingIn = true; boss.stamina = 100;
+                }
+            } else {
+                if (Math.random() < 0.05) {
+                    let container = document.getElementById('game-container');
+                    let r = Math.random();
+                    if (r < 0.33) container.className = "upside-down";
+                    else if (r < 0.66) container.className = "shake";
+                    else container.className = "";
+                }
+                
+                // --- ERROR SIGN BALANCING ---
+                if (errorSignCooldown > 0) errorSignCooldown--;
+                if (errorSignCooldown <= 0 && Math.random() < 0.04 && errorSigns.length < 3) { // Cap at 3, add cooldown
+                    spawnErrorSign();
+                    errorSignCooldown = 25; // wait ~0.6 seconds before next sign
+                }
+
+                if (deleteBtnTimer > 0) {
+                    deleteBtnTimer -= (1000/FPS);
+                    if (deleteBtnTimer <= 0) document.getElementById('delete-boss-btn').style.display = 'none';
+                } else {
+                    deleteBtnSpawnTimer += (1000/FPS);
+                    if (deleteBtnSpawnTimer > 4000) { 
+                         document.getElementById('delete-boss-btn').style.display = 'block';
+                         deleteBtnTimer = 2500; deleteBtnSpawnTimer = 0;
+                    }
+                }
+            }
+
+            for (let i = chocolates.length - 1; i >= 0; i--) {
+                chocolates[i].Do_Frame_Things();
+                if (ImagesTouching(bird, chocolates[i])) {
+                     if (isShieldActive) { deactivateShield(); chocolates.splice(i, 1); } 
+                     else if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; chocolates.splice(i, 1); } 
+                     else { triggerGameOver("THAT WAS A CAT"); }
+                } else if (chocolates[i].x < -50) chocolates.splice(i, 1);
+            }
+            for (let i = errorSigns.length - 1; i >= 0; i--) {
+                errorSigns[i].Do_Frame_Things();
+                if (ImagesTouching(bird, errorSigns[i])) {
+                     if (isShieldActive) { deactivateShield(); errorSigns.splice(i, 1); } 
+                     else if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; errorSigns.splice(i, 1); } 
+                     else { triggerGameOver("you got clipped by a kid lmao"); }
+                } else if (errorSigns[i].x < -150) errorSigns.splice(i, 1);
+            }
+
+            let hp = isBoss2 ? (BOSS2_MAX_HITS - boss2Hits) * 20 : boss.stamina;
+            ctx.fillStyle = "red"; ctx.fillRect(CANVAS_WIDTH/2 - 50, 20, hp, 10);
+            ctx.strokeStyle = "white"; ctx.strokeRect(CANVAS_WIDTH/2 - 50, 20, 100, 10);
+        }
+
+        function purchaseOrEquipSkin(key) {
+            // Check if it's a skin or trail
+            if (SKINS[key]) {
+                const skin = SKINS[key];
+                if (availableSkins.includes(key)) {
+                    if (!skin.current) {
+                        for (let k in SKINS) { SKINS[k].current = false; }
+                        skin.current = true;
+                        let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; };
+                        tempImg.src = skin.src; currentSkinKey = key; 
+                        localStorage.setItem('currentSkin', key);
+                        if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { wallDestroyCharges = MAX_DESTROY_CHARGES; }
+                        if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
+                    }
+                } else if (collectedStars >= skin.cost) {
+                    collectedStars -= skin.cost; availableSkins.push(key);
+                    localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappySkins', JSON.stringify(availableSkins));
+                    updateMenuStats(); purchaseOrEquipSkin(key); 
+                }
+            } else if (TRAILS[key]) {
+                const trail = TRAILS[key];
+                if (availableTrails.includes(key)) {
+                    if (!trail.current) {
+                        for (let k in TRAILS) { TRAILS[k].current = false; }
+                        trail.current = true; currentTrailKey = key;
+                        localStorage.setItem('currentTrail', key);
+                    }
+                } else if (collectedStars >= trail.cost) {
+                    collectedStars -= trail.cost; availableTrails.push(key);
+                    localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappyTrails', JSON.stringify(availableTrails));
+                    updateMenuStats(); purchaseOrEquipSkin(key);
                 }
             }
         }
 
-        window.onload = function() {
-            myCanvas = document.getElementById("myCanvas");
-            if (!myCanvas) {
-                console.error("Canvas not found!");
-                return;
-            }
-            ctx = myCanvas.getContext('2d');
-            var FPS = 40;
+        function playPowerUpSound() { flapSound.currentTime = 0; flapSound.play().catch(e => console.warn(e)); }
 
-            // --- CONFIGURATION ---
-            const CANVAS_WIDTH = 640; 
-            myCanvas.width = CANVAS_WIDTH; 
+        function activateDoubleStars() {
+            isDoubleStarsActive = true; doubleStarEndTime = Date.now() + POTION_DURATION_MS;
+            if (potionTimeoutID) clearTimeout(potionTimeoutID);
+            potionTimeoutID = setTimeout(() => { isDoubleStarsActive = false; potionTimeoutID = null; }, POTION_DURATION_MS);
+        }
+        function setGameSpeed(slow) {
+           // We no longer change FPS. We change speedMultiplier.
+           if (slow) speedMultiplier = 0.5; else speedMultiplier = 1;
+        }
+        function activateSlowMotion() {
+            isSlowMotionActive = true; setGameSpeed(true); slowMoEndTime = Date.now() + SLOW_POTION_DURATION_MS;
+            if (slowPotionTimeoutID) clearTimeout(slowPotionTimeoutID);
+            slowPotionTimeoutID = setTimeout(() => { isSlowMotionActive = false; setGameSpeed(false); slowPotionTimeoutID = null; }, SLOW_POTION_DURATION_MS);
+        }
 
-            // --- BOSS FIGHT VARIABLES ---
-            const BOSS_IMG = new Image();
-            BOSS_IMG.src = 'boss.png'; 
-            const CHOCO_IMG = new Image();
-            CHOCO_IMG.src = 'chocolate.png'; 
-            let boss = {
-                x: CANVAS_WIDTH + 100,
-                y: 100,
-                width: 150,
-                height: 150,
-                stamina: 100, 
-                speedY: 2,
-                movingIn: true
-            };
-            let chocolates = [];
-            let victoryTimer = 0; 
-
-            // --- BACKGROUND & TRANSITION CONFIG ---
-            const backgroundImages = [];
-            for (let i = 1; i <= 5; i++) {
-                let img = new Image();
-                img.src = `bg${i}.png`;
-                backgroundImages.push(img);
-            }
-
-            const AREA_NAMES = [ "The Beginning", "The SKY", "The SUNSET", "The NIGHT", "The VOID" ];
-
-            let currentBGIndex = 0;
-            let transitionText = "";
-            let transitionTimer = 0;
-
-            let flashColor = null;
-            let flashTimer = 0;
-            let levelReached = 1; 
-
-            function triggerFlash(color) {
-                flashColor = color;
-                flashTimer = 10; 
-            }
-
-            // --- BASE PHYSICS ---
-            var jump_amount = -7;       
-            var max_fall_speed = +8;   
-            var acceleration = 0.6;    
-
-            // --- IMPROVED SUPERPOWER PHYSICS (BUFFED) ---
-            const SUPER_JUMP_AMOUNT = -3.8;       
-            const SUPER_ACCELERATION = 0.18;      
-            const SUPER_MAX_FALL_SPEED = +3.5;    
-
-            // --- SUPERPOWER STAR MAGNET ---
-            const MAGNET_RADIUS = 100; 
-
-            // --- SUPERPOWER TOUGH CHEETOS ---
-            const INITIAL_LIVES = 3; 
-            let currentLives = 0; 
-
-            // --- SUPERPOWER BOMB CHEETOS ---
-            const MAX_DESTROY_CHARGES = 2;
-            let wallDestroyCharges = 0;
-            const WALLS_TO_DESTROY = 2; 
-
-            var pipe_speed = -2;
-            var time_game_last_running;
-            var bottom_bar_offset = 0;
-            var pipes = [];
-
-            var pipe_spawn_timer = 0;
-            const PIPE_SPAWN_INTERVAL_MS = 2500; 
-
-            let currentScore = 0; 
-
-            const flapSound = new Audio('woof.mp3');
-            flapSound.load(); 
-            flapSound.volume = 0.25; 
-
-            // --- SHIELD MECHANISM ---
-            const SHIELD_DURATION_MS = 6000;
-            const SHIELD_SPAWN_CHANCE = 0.10; 
-            let isShieldActive = false;
-            let shieldTimeoutID = null;
-            let shields = []; 
-
-            const SHIELD_IMG = new Image();
-            SHIELD_IMG.src = 'shield.png'; 
-            const SHIELD_WIDTH = 64; 
-            const SHIELD_HEIGHT = 64; 
-
-            const SHIELDED_BIRD_IMG = new Image();
-            SHIELDED_BIRD_IMG.src = 'player_shielded.png'; 
-
-            // --- POTION MECHANISM ---
-            const POTION_DURATION_MS = 15000; 
-            const POTION_SPAWN_CHANCE = 0.10; 
-            let isDoubleStarsActive = false;
-            let potionTimeoutID = null;
-            let potions = [];
-
-            const POTION_IMG = new Image();
-            POTION_IMG.src = 'potion.png';
-            const POTION_WIDTH = 30;
-            const POTION_HEIGHT = 30;
-
-            // --- STAR/SHOP MECHANISM ---
-            let collectedStars = 0;
-            let stars = []; 
-
-            const STAR_IMG = new Image();
-            STAR_IMG.src = 'star.png'; 
-            const STAR_WIDTH = 20;
-            const STAR_HEIGHT = 20;
-            const STAR_VALUE = 1; 
-            const STAR_SPAWN_CHANCE = 0.5; 
-
-            const SKINS = {
-                'default': { src: 'player.png', cost: 0, current: true, name: 'Original Cheetos' }, 
-                'red':     { src: 'player_red.png', cost: 30, current: false, name: 'Cute Cheetos' },
-                'tough':   { src: 'player_tough.png', cost: 150, current: false, name: 'Tough Cheetos' }, 
-                'rich':    { src: 'player_rich.png', cost: 150, current: false, name: 'Rich Cheetos' }, 
-                'happy':   { src: 'player_happy.png', cost: 250, current: false, name: 'Happy Cheetos' }, 
-                'yellow':  { src: 'player_yellow.png', cost: 300, current: false, name: 'Terrorist Cheetos' }, 
-                'black':   { src: 'player_black.png', cost: 650, current: false, name: 'Legendary Cheetos' } 
-            };
-
-            // Safety check for localStorage
-            try {
-                if (localStorage.getItem('flappyStars')) {
-                    collectedStars = parseInt(localStorage.getItem('flappyStars'));
+        function useWallDestruction() {
+            if (!(currentSkinKey === 'yellow' || currentSkinKey === 'black') || wallDestroyCharges <= 0) return false; 
+            let destroyedSets = 0;
+            for (let i = 0; i < pipes.length; i += 2) { 
+                if (destroyedSets >= WALLS_TO_DESTROY) break; 
+                if (pipes[i].x > bird.x + bird.MyImg.width && pipes[i].visible) {
+                    pipes[i].visible = false; if (pipes[i+1]) pipes[i+1].visible = false; destroyedSets++;
                 }
-            } catch(e) { console.log("Local Storage not available"); }
-
-            let availableSkins = ['default'];
-            try {
-                availableSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['default'];
-            } catch(e) {}
-
-            let currentSkinKey = 'default';
-            try {
-                if (localStorage.getItem('currentSkin')) {
-                    currentSkinKey = localStorage.getItem('currentSkin');
-                    for (const key in SKINS) { SKINS[key].current = false; }
-                    if (SKINS[currentSkinKey]) { SKINS[currentSkinKey].current = true; }
-                }
-            } catch(e) {}
-
-            function MySprite(img_url) {
-                this.x = 0;
-                this.y = 0;
-                this.visible = true; 
-                this.velocity_x = 0;
-                this.velocity_y = 0;
-                this.MyImg = new Image();
-                this.MyImg.src = img_url || '';
-                this.angle = 0;
-                this.flipV = false;
-                this.flipH = false;
-                this.passed = false; 
             }
+            if (destroyedSets > 0) { wallDestroyCharges--; playPowerUpSound(); return true; }
+            return false;
+        }
 
-            MySprite.prototype.Do_Frame_Things = function () {
-                if (!this.MyImg.complete || this.MyImg.naturalWidth === 0) return; 
-                ctx.save();
-                ctx.translate(this.x + this.MyImg.width / 2, this.y + this.MyImg.height / 2);
-                ctx.rotate((this.angle * Math.PI) / 180);
-                if (this.flipV) ctx.scale(1, -1);
-                if (this.flipH) ctx.scale(-1, 1);
+        function make_bird_slow_and_fall() {
+            let final_accel = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_ACCELERATION : acceleration;
+            let final_max = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_MAX_FALL_SPEED : max_fall_speed;
+            
+            // NOTE: Gravity is NOT affected by speedMultiplier to keep player fast in matrix mode
+            if (bird.velocity_y < final_max) { bird.velocity_y += final_accel; }
+            if (bird.y > myCanvas.height - bird.MyImg.height || bird.y < 0 - bird.MyImg.height) { bird.velocity_y = 0; triggerGameOver("Game Over"); }
+        }
+
+        function updateDifficulty() {
+            let level = currentBGIndex; // 0 to 4
+            // Progressive Speed: -2, -3, -4, -5, -6
+            pipe_speed = -2 - level;
+            
+            // Adjust Spawn Interval so pipes don't get too sparse
+            // Base = 2500ms. Subtract 300ms per level. Min 1000ms.
+            currentSpawnInterval = 2500 - (level * 300);
+            if (currentSpawnInterval < 1000) currentSpawnInterval = 1000;
+        }
+
+        function add_pipe(x_pos, top_of_gap, gap_width) {
+            if (isBoss2 && game_mode === 'running') {
+                let isTop = Math.random() < 0.5;
+                let wall = new MySprite(); wall.isText = true; wall.text = "undefined"; wall.x = x_pos; wall.velocity_x = pipe_speed;
+                if (isTop) wall.y = top_of_gap - 50; else wall.y = top_of_gap + gap_width + 50;
                 
-                if (isShieldActive && this === bird) {
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.MyImg.width / 2 + 5, 0, 2 * Math.PI);
-                    ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; 
-                    ctx.fill();
-                    ctx.closePath();
+                // VOID MECHANIC: Floating
+                if (currentBGIndex === 4) {
+                    wall.oscillate = true; wall.baseY = wall.y; wall.phase = Date.now();
                 }
-                
-                if (isDoubleStarsActive && this === bird) {
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.MyImg.width / 2 + 8, 0, 2 * Math.PI);
-                    ctx.fillStyle = 'rgba(128, 0, 128, 0.4)';
-                    ctx.fill();
-                    ctx.closePath();
-                }
+                pipes.push(wall); return;
+            }
+            
+            var top_pipe = new MySprite(); top_pipe.MyImg = pipe_piece;
+            top_pipe.x = x_pos; top_pipe.y = top_of_gap - pipe_piece.height; top_pipe.velocity_x = pipe_speed;
+            
+            var bottom_pipe = new MySprite(); bottom_pipe.MyImg = pipe_piece; bottom_pipe.flipV = true;
+            bottom_pipe.x = x_pos; bottom_pipe.y = top_of_gap + gap_width; bottom_pipe.velocity_x = pipe_speed;
 
-                if (this.visible) ctx.drawImage(this.MyImg, -this.MyImg.width / 2, -this.MyImg.height / 2);
-                this.x = this.x + this.velocity_x;
-                this.y = this.y + this.velocity_y;
-                ctx.restore();
-            };
-
-            function ImagesTouching(thing1, thing2) {
-                if (!thing1.visible || !thing2.visible) return false; 
-                if (!thing1.MyImg.complete || !thing2.MyImg.complete) return false;
-                
-                let w1 = thing1.MyImg.width || thing1.width;
-                let h1 = thing1.MyImg.height || thing1.height;
-                let w2 = thing2.MyImg.width || thing2.width;
-                let h2 = thing2.MyImg.height || thing2.height;
-
-                if (thing1.x >= thing2.x + w2 || thing1.x + w1 <= thing2.x) return false;
-                if (thing1.y >= thing2.y + h2 || thing1.y + h1 <= thing2.y) return false;
-                return true;
+            // VOID MECHANIC: Floating
+            // Capture phase so items can match it
+            let voidPhase = 0;
+            if (currentBGIndex === 4) {
+                voidPhase = Date.now();
+                top_pipe.oscillate = true; top_pipe.baseY = top_pipe.y; top_pipe.phase = voidPhase;
+                bottom_pipe.oscillate = true; bottom_pipe.baseY = bottom_pipe.y; bottom_pipe.phase = voidPhase;
             }
 
-            function spawnChocolate() {
-                let choc = new MySprite();
-                choc.MyImg = CHOCO_IMG;
-                choc.x = boss.x;
-                choc.y = boss.y + boss.height/2;
-                choc.velocity_x = -6; 
-                choc.velocity_y = (bird.y - boss.y) / 40; 
-                chocolates.push(choc);
+            pipes.push(top_pipe);
+            pipes.push(bottom_pipe);
+
+            // HELPER to create synced item
+            function syncVoidItem(obj, yPos) {
+                obj.x = x_pos + 16; 
+                obj.y = yPos; 
+                obj.velocity_x = pipe_speed;
+                if (currentBGIndex === 4) {
+                     obj.oscillate = true; 
+                     obj.baseY = obj.y; // Base Y is the initial spawn Y
+                     obj.phase = voidPhase; // Sync phase with pipes
+                }
+                return obj;
             }
 
-            function updateBoss() {
-                if (boss.movingIn) {
-                    boss.x -= 2;
-                    if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false;
+            let rand = Math.random();
+            if (rand < SHIELD_SPAWN_CHANCE) {
+                let newShield = new MySprite(); newShield.MyImg = SHIELD_IMG;
+                shields.push(syncVoidItem(newShield, top_of_gap + gap_width/2 - 32));
+            } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE) {
+                let newPotion = new MySprite(); newPotion.MyImg = POTION_IMG;
+                potions.push(syncVoidItem(newPotion, top_of_gap + gap_width/2 - 15));
+            } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE + SLOW_POTION_SPAWN_CHANCE) {
+                let newSlow = new MySprite(); newSlow.MyImg = SLOW_POTION_IMG;
+                slowPotions.push(syncVoidItem(newSlow, top_of_gap + gap_width/2 - 15));
+            }
+            if (Math.random() < STAR_SPAWN_CHANCE) { 
+                let newStar = new MySprite(); newStar.MyImg = STAR_IMG;
+                stars.push(syncVoidItem(newStar, top_of_gap + gap_width*0.75 - 10));
+            }
+        }
+
+        function activateShield() {
+            isShieldActive = true; shieldEndTime = Date.now() + SHIELD_DURATION_MS;
+            if (shieldTimeoutID) clearTimeout(shieldTimeoutID);
+            shieldTimeoutID = setTimeout(() => { deactivateShield(); }, SHIELD_DURATION_MS);
+            bird.MyImg.src = SHIELDED_BIRD_IMG.src;
+        }
+        function deactivateShield() {
+            isShieldActive = false; if (shieldTimeoutID) { clearTimeout(shieldTimeoutID); shieldTimeoutID = null; }
+            let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; };
+            tempImg.src = SKINS[currentSkinKey].src;
+        }
+
+        function triggerGameOver(msg) {
+            if (currentScore === 69) { unlockAchievement('interesting'); }
+            if (currentScore > highScore) { highScore = currentScore; localStorage.setItem('flappyHighScore', highScore); }
+            deathMessage = msg || "Game Over";
+            game_mode = 'over';
+            document.getElementById('delete-boss-btn').style.display = 'none';
+            document.getElementById('game-container').className = ""; 
+        }
+
+        function check_for_end_game() {
+            for (var i = 0; i < pipes.length; i++) {
+                if (ImagesTouching(bird, pipes[i])) {
+                    if (isShieldActive) { deactivateShield(); pipes[i].visible = false; continue; } 
+                    else {
+                        if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; pipes[i].visible = false; return; }
+                        triggerGameOver("Game Over"); return; 
+                    }
+                }
+            }
+            const birdCenterX = bird.x + bird.MyImg.width / 2; const birdCenterY = bird.y + bird.MyImg.height / 2;
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i]; let collected = false;
+                if (currentSkinKey === 'rich' || currentSkinKey === 'black') {
+                    const dx = birdCenterX - (star.x + STAR_WIDTH / 2); const dy = birdCenterY - (star.y + STAR_HEIGHT / 2);
+                    if (Math.sqrt(dx * dx + dy * dy) < MAGNET_RADIUS) collected = true;
+                }
+                if (ImagesTouching(bird, star)) collected = true;
+                if (collected) {
+                    let value = isDoubleStarsActive ? STAR_VALUE * 2 : STAR_VALUE;
+                    collectedStars += value; try { localStorage.setItem('flappyStars', collectedStars); } catch(e){}
+                    stars.splice(i, 1); playPowerUpSound();
+                }
+            }
+            for (let i = potions.length - 1; i >= 0; i--) {
+                if (ImagesTouching(bird, potions[i])) { activateDoubleStars(); potions.splice(i, 1); playPowerUpSound(); }
+            }
+            for (let i = shields.length - 1; i >= 0; i--) {
+                if (ImagesTouching(bird, shields[i])) { activateShield(); shields.splice(i, 1); playPowerUpSound(); }
+            }
+            for (let i = slowPotions.length - 1; i >= 0; i--) {
+                if (ImagesTouching(bird, slowPotions[i])) { activateSlowMotion(); slowPotions.splice(i, 1); playPowerUpSound(); }
+            }
+        }
+
+        function check_for_score_increase() {
+            for (var i = 0; i < pipes.length; i += 2) {
+                if (isBoss2 && pipes[i].isText) {
+                    const p = pipes[i];
+                    if (p.x + 180 < bird.x && p.passed === false) { currentScore++; p.passed = true; }
+                    continue; 
+                }
+                const topPipe = pipes[i];
+                if (topPipe && topPipe.x + topPipe.MyImg.width < bird.x && topPipe.passed === false) {
+                    currentScore++; topPipe.passed = true; if (pipes[i+1]) pipes[i+1].passed = true;
+                    if (currentScore % 10 === 0 && currentScore > 0 && currentBGIndex < 4) {
+                        currentBGIndex++; 
+                        updateDifficulty(); // UPDATE SPEED
+                        transitionText = AREA_NAMES[currentBGIndex]; transitionTimer = 80; 
+                        if (currentBGIndex === 4 && !musicMuted) { bgMusic.pause(); bgMusic.currentTime = 0; voidMusic.play().catch(e => console.log(e)); }
+                    }
+                    if (currentScore > 10) unlockAchievement('beginner');
+                    if (currentScore > 20) unlockAchievement('hang');
+                    if (currentScore > 30) unlockAchievement('sunset');
+                    if (currentScore > 40) unlockAchievement('void');
+                }
+            }
+        }
+
+        // --- DISPLAY FUNCTIONS ---
+
+        function display_star_count() {
+            // MOVED DOWN TO Y=55
+            ctx.font = '20px Arial'; ctx.fillStyle = 'yellow'; ctx.textAlign = 'left';
+            ctx.fillText('Stars: ' + collectedStars, 10, 55);
+            
+            let infoX = 120;
+            let now = Date.now();
+
+            if (isDoubleStarsActive) { 
+                let secsLeft = Math.ceil((doubleStarEndTime - now) / 1000);
+                if (secsLeft < 0) secsLeft = 0;
+                ctx.fillStyle = '#ff00ff'; ctx.fillText(`X2 (${secsLeft}s)`, infoX, 55); infoX += 110; 
+            }
+            if (isSlowMotionActive) { 
+                let secsLeft = Math.ceil((slowMoEndTime - now) / 1000);
+                if (secsLeft < 0) secsLeft = 0;
+                ctx.fillStyle = '#00ffff'; ctx.fillText(`SLOW (${secsLeft}s)`, infoX, 55); infoX += 120;
+            }
+            if (isShieldActive) {
+                let secsLeft = Math.ceil((shieldEndTime - now) / 1000);
+                if (secsLeft < 0) secsLeft = 0;
+                ctx.fillStyle = 'cyan'; ctx.fillText(`SHIELD (${secsLeft}s)`, infoX, 55);
+            }
+        }
+
+        function display_score() {
+            // MOVED DOWN TO Y=90
+            ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
+            
+            let displayStr = 'Score: ' + currentScore;
+            
+            // VOID GLITCH EFFECT
+            if (currentBGIndex === 4 && Math.random() < 0.1) {
+                // Randomly glitch the text for 1 frame
+                displayStr = "Sc#re: " + Math.floor(Math.random()*999);
+            }
+
+            ctx.strokeText(displayStr, 10, 90); ctx.fillStyle = 'white'; ctx.fillText(displayStr, 10, 90); 
+            if (currentScore < 1) { ctx.font = '14px Arial'; ctx.fillStyle = 'cyan'; ctx.fillText('Tap top-left for Shop', 10, 110); } 
+            else { ctx.font = '14px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText('Shop Locked', 10, 110); }
+        }
+
+        function display_lives() {
+            // MOVED DOWN TO Y=140
+            let y = 140; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'left';
+            if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) {
+                ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Lives: ' + currentLives, 10, y);
+                ctx.fillStyle = '#ff4d4d'; ctx.fillText('Lives: ' + currentLives, 10, y); y += 35;
+            } else if (currentLives >= 100) { // DEV MODE DISPLAY
+                ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('GOD MODE', 10, y);
+                ctx.fillStyle = '#ff4d4d'; ctx.fillText('GOD MODE', 10, y); y += 35;
+            }
+            
+            if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) { 
+                ctx.fillStyle = 'red'; ctx.fillRect(myCanvas.width - 90, 10, 80, 50);
+                ctx.fillStyle = 'white'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText('BOMB', myCanvas.width - 50, 42);
+                ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Charges: ' + wallDestroyCharges, 10, y);
+                ctx.fillStyle = 'orange'; ctx.fillText('Charges: ' + wallDestroyCharges, 10, y);
+            }
+        }
+
+        function display_shop() {
+            ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+            ctx.font = '30px Arial'; ctx.fillStyle = 'black'; ctx.textAlign = 'center';
+            
+            // Toggle Button (Top Right)
+            ctx.fillStyle = '#444'; ctx.fillRect(myCanvas.width - 200, 10, 190, 40);
+            ctx.fillStyle = 'white'; ctx.font = '20px Arial';
+            ctx.fillText(shopCategory === 'skins' ? "Switch to TRAILS" : "Switch to SKINS", myCanvas.width - 105, 38);
+
+            ctx.font = '40px Arial'; ctx.fillStyle = 'black'; 
+            ctx.fillText(shopCategory === 'skins' ? 'Skin Shop' : 'Trail Shop', myCanvas.width / 2, 50);
+            ctx.font = '25px Arial'; ctx.fillStyle = 'yellow';
+            ctx.fillText('Your Stars: ' + collectedStars, myCanvas.width / 2, 90);
+            
+            let y_offset = 140; 
+            const items = shopCategory === 'skins' ? SKINS : TRAILS;
+            const keys = Object.keys(items);
+            
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i]; const item = items[key]; let status = '';
+                let owned = shopCategory === 'skins' ? availableSkins.includes(key) : availableTrails.includes(key);
+                
+                if (owned) {
+                    status = item.current ? ` [EQUIPPED]` : ` [OWNED]`; ctx.fillStyle = item.current ? 'green' : 'blue';
                 } else {
-                    boss.y += boss.speedY;
-                    if (boss.y > 300 || boss.y < 50) boss.speedY *= -1;
-
-                    if (Math.random() < 0.06) spawnChocolate();
-                    
-                    boss.stamina -= 0.1; 
-                    if (boss.stamina <= 0) {
-                        triggerFlash("rgba(0, 255, 0, 0.6)"); 
-                        victoryTimer = 100; 
-                        game_mode = 'running'; 
-                        currentScore = 51; 
-                        boss.x = CANVAS_WIDTH + 500; 
-                        chocolates = []; 
-                        pipe_spawn_timer = 0; 
-                    }
+                    status = ` [COST: ${item.cost}]`; ctx.fillStyle = (collectedStars >= item.cost) ? 'orange' : 'red';
                 }
+                ctx.textAlign = 'center'; 
+                // Draw shortcut number
+                ctx.font = 'bold 20px Arial'; ctx.fillStyle = 'white'; 
+                ctx.fillText(`[${i+1}]`, myCanvas.width / 2 - 200, y_offset);
 
-                if (BOSS_IMG.complete) {
-                    ctx.drawImage(BOSS_IMG, boss.x, boss.y, boss.width, boss.height);
-                }
-
-                for (let i = chocolates.length - 1; i >= 0; i--) {
-                    chocolates[i].Do_Frame_Things();
-                    if (ImagesTouching(bird, chocolates[i])) {
-                            if (isShieldActive) {
-                                deactivateShield();
-                                chocolates.splice(i, 1);
-                            } else {
-                                if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { 
-                                    currentLives--; 
-                                    chocolates.splice(i, 1);
-                                } else {
-                                    game_mode = 'over'; 
-                                }
-                            }
-                    }
-                    else if (chocolates[i].x < -50) chocolates.splice(i, 1);
-                }
-
-                ctx.fillStyle = "red";
-                ctx.fillRect(CANVAS_WIDTH/2 - 50, 20, boss.stamina, 10);
-                ctx.strokeStyle = "white";
-                ctx.strokeRect(CANVAS_WIDTH/2 - 50, 20, 100, 10);
+                ctx.font = '25px Arial'; ctx.fillStyle = (collectedStars >= item.cost || owned) ? (item.current ? 'green' : 'blue') : 'red';
+                ctx.fillText(item.name + status, myCanvas.width / 2, y_offset); y_offset += 35;
             }
+            
+            ctx.font = '20px Arial'; ctx.fillStyle = 'black';
+            ctx.fillText('Press 1-7 to Buy/Equip', myCanvas.width / 2, myCanvas.height - 70);
+            ctx.fillText('Tap BOTTOM to Exit Shop', myCanvas.width / 2, myCanvas.height - 30);
+        }
 
-            function purchaseOrEquipSkin(skinKey) {
-                const skin = SKINS[skinKey];
-                if (availableSkins.includes(skinKey)) {
-                    if (!skin.current) {
-                        for (let key in SKINS) { SKINS[key].current = false; }
-                        skin.current = true;
-                        let tempImg = new Image();
-                        tempImg.onload = function() { bird.MyImg = tempImg; };
-                        tempImg.src = skin.src; 
-                        currentSkinKey = skinKey; 
-                        try { localStorage.setItem('currentSkin', skinKey); } catch(e){}
-                        if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { wallDestroyCharges = MAX_DESTROY_CHARGES; }
-                        
-                        if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES;
-                        else currentLives = 0;
-                    }
-                } else if (collectedStars >= skin.cost) {
-                    collectedStars -= skin.cost;
-                    availableSkins.push(skinKey);
-                    try {
-                        localStorage.setItem('flappyStars', collectedStars);
-                        localStorage.setItem('flappySkins', JSON.stringify(availableSkins));
-                    } catch(e){}
-                    purchaseOrEquipSkin(skinKey); 
-                }
+        function reset_game() {
+            bird.x = myCanvas.width / 3; bird.y = myCanvas.height / 2; bird.angle = 0; bird.velocity_y = 0;
+            pipes = []; stars = []; shields = []; potions = []; slowPotions = []; errorSigns = []; trailHistory = [];
+            currentScore = 0; pipe_spawn_timer = 0;
+            isDoubleStarsActive = false; isSlowMotionActive = false;
+            deathMessage = "Game Over";
+            
+            bossIntroState = 0; bossIntroTimer = 0;
+            isBoss2 = false; boss2Hits = 0; deleteBtnTimer = 0; deleteBtnSpawnTimer = 0;
+            errorSignCooldown = 0; // Reset Cooldown
+            document.getElementById('delete-boss-btn').style.display = 'none';
+            document.getElementById('game-container').className = ""; 
+
+            if (slowPotionTimeoutID) clearTimeout(slowPotionTimeoutID);
+            setGameSpeed(false); 
+            levelReached = 1; chocolates = []; boss.stamina = 100; boss.x = CANVAS_WIDTH + 100; boss.movingIn = true;
+            victoryTimer = 0; currentBGIndex = 0; transitionText = AREA_NAMES[0]; transitionTimer = 80;
+            
+            // RESET DIFFICULTY
+            updateDifficulty();
+
+            if (potionTimeoutID) clearTimeout(potionTimeoutID);
+            if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
+            wallDestroyCharges = (currentSkinKey === 'yellow' || currentSkinKey === 'black') ? MAX_DESTROY_CHARGES : 0;
+            add_pipe(CANVAS_WIDTH, 100, 140); deactivateShield(); 
+
+            voidMusic.pause(); voidMusic.currentTime = 0;
+        }
+
+        // --- MAIN GAME LOOP (Now Global) ---
+        function Do_a_Frame() {
+            if (game_mode === 'waiting_for_website') return; 
+            if (game_mode === 'shop' || game_mode === 'shop_from_menu') { display_shop(); return; }
+            
+            // Safety check for context
+            if (!ctx) return;
+
+            ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+            if (backgroundImages[currentBGIndex].complete) { ctx.drawImage(backgroundImages[currentBGIndex], 0, 0, myCanvas.width, myCanvas.height); }
+            bird.Do_Frame_Things();
+            // Don't scroll bottom bar if boss is talking
+            if (bottom_bar.complete && bossIntroState >= 3) { 
+                 if (bottom_bar_offset < -23) bottom_bar_offset = 0; ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height); 
+            } else if (bottom_bar.complete && game_mode !== 'boss') {
+                 if (bottom_bar_offset < -23) bottom_bar_offset = 0; ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height);
+            } else if (bottom_bar.complete) {
+                 ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height); 
             }
-
-            function playPowerUpSound() {
-                flapSound.currentTime = 0; 
-                flapSound.play().catch(e => console.warn("Audio play failed:", e));
-            }
-
-            function activateDoubleStars() {
-                isDoubleStarsActive = true;
-                if (potionTimeoutID) clearTimeout(potionTimeoutID);
-                potionTimeoutID = setTimeout(() => {
-                    isDoubleStarsActive = false;
-                    potionTimeoutID = null;
-                }, POTION_DURATION_MS);
-            }
-
-            function useWallDestruction() {
-                if (!(currentSkinKey === 'yellow' || currentSkinKey === 'black') || wallDestroyCharges <= 0) return false; 
-                let destroyedSets = 0;
-                for (let i = 0; i < pipes.length; i += 2) { 
-                    if (destroyedSets >= WALLS_TO_DESTROY) break; 
-                    if (pipes[i].x > bird.x + bird.MyImg.width && pipes[i].visible) {
-                        pipes[i].visible = false;
-                        if (pipes[i+1]) pipes[i+1].visible = false; 
-                        destroyedSets++;
-                    }
-                }
-                if (destroyedSets > 0) {
-                    wallDestroyCharges--;
-                    playPowerUpSound(); 
-                    return true;
-                }
-                return false;
-            }
-
-            // --- TOUCH HANDLING ---
-            let lastSkinIndex = 0;
-            function Got_Player_Input(MyEvent) {
-                let clickX = 0;
-                let clickY = 0;
-                if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
-                    const rect = myCanvas.getBoundingClientRect();
-                    const clientX = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientX : MyEvent.clientX;
-                    const clientY = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientY : MyEvent.clientY;
-                    if (clientX === undefined) return;
-
-                    clickX = (clientX - rect.left) * (myCanvas.width / rect.width);
-                    clickY = (clientY - rect.top) * (myCanvas.height / rect.height);
-                }
-
-                switch (game_mode) {
-                case 'prestart': game_mode = 'running'; break;
-                case 'running':
-                case 'boss': 
-                    if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
-                        // SHOP CHECK
-                        if (clickX < 100 && clickY < 100 && currentScore < 1) {
-                            game_mode = 'shop'; return;
-                        }
-                        // BOMB BUTTON (TOP RIGHT)
-                        if (clickX > myCanvas.width - 100 && clickY < 100) {
-                            useWallDestruction(); return; // Return so we don't flap
-                        }
-                        // JUMP
-                        let current_jump = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_JUMP_AMOUNT : jump_amount;
-                        bird.velocity_y = current_jump;
-                    }
-                    if (MyEvent.type === 'keydown' && MyEvent.keyCode === 83) { 
-                        if (currentScore < 1) game_mode = 'shop'; 
-                    }
-                    if (MyEvent.type === 'keydown' && MyEvent.keyCode === 68) { useWallDestruction(); }
+            
+            switch (game_mode) {
+                case 'prestart': 
+                    ctx.font = '25px Arial'; ctx.fillStyle = 'red'; ctx.textAlign = 'center';
+                    ctx.fillText('Tap to start', myCanvas.width / 2, myCanvas.height / 4);
                     break;
-                case 'shop':
-                    if ((MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') && clickY > myCanvas.height - 60) {
-                            game_mode = 'running'; break; 
+                case 'boss':
+                    if (bossIntroState < 3 && !boss.movingIn) { bird.velocity_y = 0; } 
+                    else { time_game_last_running = new Date(); bottom_bar_offset += pipe_speed * speedMultiplier; make_bird_slow_and_fall(); }
+                    updateBoss(); 
+                    break;
+                case 'running':
+                    time_game_last_running = new Date(); bottom_bar_offset += pipe_speed * speedMultiplier;
+                    if (currentScore > 0 && currentScore % 50 === 0) { 
+                        game_mode = 'boss'; pipes = []; if (currentScore >= 100) { isBoss2 = true; boss2Hits = 0; }
+                    } else {
+                        for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); }
+                        
+                        // FIX: SCALE TIMER WITH SPEED MULTIPLIER
+                        pipe_spawn_timer += (1000 / FPS) * speedMultiplier; 
+                        
+                        // Use Dynamic Spawn Interval
+                        if (pipe_spawn_timer > currentSpawnInterval) { 
+                            let gap_size = 140; let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; 
+                            add_pipe(myCanvas.width, top_of_gap, gap_size); pipe_spawn_timer = 0;
+                        }
                     }
-                    if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
-                        const skinKeys = Object.keys(SKINS);
-                        lastSkinIndex = (lastSkinIndex + 1) % skinKeys.length;
-                        purchaseOrEquipSkin(skinKeys[lastSkinIndex]);
-                    }
-                    if (MyEvent.type === 'keydown' && MyEvent.keyCode === 69) { game_mode = 'running'; break; }
-                    if (MyEvent.type === 'keydown') {
-                        const skinKeys = Object.keys(SKINS);
-                        const skinIndex = MyEvent.keyCode - 49; 
-                        if (skinIndex >= 0 && skinIndex < skinKeys.length) { purchaseOrEquipSkin(skinKeys[skinIndex]); }
+                    make_bird_slow_and_fall(); check_for_end_game(); check_for_score_increase();
+                    [pipes, shields, stars, potions, slowPotions].forEach(arr => {
+                        for (let i = arr.length - 1; i >= 0; i--) {
+                            if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things();
+                        }
+                    });
+                    
+                    if (currentBGIndex === 4 && Math.random() < 0.10) {
+                        ctx.save(); ctx.font = 'bold 20px "Courier New", monospace';
+                        ctx.fillStyle = Math.random() < 0.5 ? '#00FF00' : '#FFFFFF'; 
+                        let gx = Math.random() * myCanvas.width; let gy = Math.random() * myCanvas.height;
+                        ctx.shadowColor = "red"; ctx.shadowOffsetX = 2;
+                        ctx.fillText(GLITCH_TEXTS[Math.floor(Math.random() * GLITCH_TEXTS.length)], gx, gy); ctx.restore();
                     }
                     break;
                 case 'over':
-                    if (new Date() - time_game_last_running > 1000) {
-                    reset_game();
-                    game_mode = 'running';
-                    }
+                    make_bird_slow_and_fall(); 
+                    // UPDATED FONT SIZE
+                    ctx.font = '22px "Press Start 2P"'; ctx.fillStyle = 'red'; ctx.textAlign = 'center';
+                    ctx.fillText(deathMessage, myCanvas.width / 2, 100); 
+                    ctx.font = '30px Arial';
+                    ctx.fillText('Score: ' + currentScore, myCanvas.width / 2, 160);
+                    ctx.font = '20px Arial'; ctx.fillStyle = 'white'; ctx.fillText('Tap to return to Menu', myCanvas.width / 2, 250);
                     break;
-                }
-                if (MyEvent.cancelable) MyEvent.preventDefault();
+                case 'true_end_sequence':
+                     ctx.fillStyle = "black"; ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
+                     
+                     // Ensure Music Continues
+                     if (!musicMuted && voidMusic.paused) { voidMusic.play().catch(e => console.log(e)); }
+
+                     if (endSequenceStep === -1) {
+                         endSequenceTimer--; if (endSequenceTimer <= 0) { endSequenceStep = 0; endSequenceTimer = 0; }
+                     } else if (endSequenceStep < 6) { // Increased to 6 for new text
+                         if (endSequenceTimer < 40) { endSequenceAlpha += 0.025; endSequenceTimer++; } 
+                         else if (endSequenceTimer < 120) { endSequenceAlpha = 1; endSequenceTimer++; } 
+                         else if (endSequenceTimer < 160) { endSequenceAlpha -= 0.025; endSequenceTimer++; } 
+                         else { endSequenceStep++; endSequenceTimer = 0; endSequenceAlpha = 0; }
+                         if (endSequenceAlpha < 0) endSequenceAlpha = 0; if (endSequenceAlpha > 1) endSequenceAlpha = 1;
+                         drawGlitchText(END_TEXTS[endSequenceStep], endSequenceAlpha);
+                     } else {
+                         collectedStars += 500; localStorage.setItem('flappyStars', collectedStars); updateMenuStats();
+                         document.getElementById('landing-page').style.display = 'flex'; game_mode = 'waiting_for_website'; reset_game();
+                         showCheatFeedback("TRUE ENDING: +500 STARS");
+                     }
+                     break;
             }
 
-            window.addEventListener('touchstart', Got_Player_Input, {passive: false});
-            window.addEventListener('mousedown', Got_Player_Input);
-            window.addEventListener('keydown', Got_Player_Input); 
-
-            function make_bird_slow_and_fall() {
-                let dynamic_accel = acceleration;
-                let dynamic_max = max_fall_speed;
-                if (currentScore > 50) {
-                    if(levelReached < 3) { triggerFlash("rgba(255, 0, 0, 0.4)"); levelReached = 3; }
-                    dynamic_accel = 1.0; dynamic_max = 11;
-                } else if (currentScore > 15) {
-                    if(levelReached < 2) { triggerFlash("rgba(255, 0, 0, 0.3)"); levelReached = 2; }
-                    dynamic_accel = 0.8; dynamic_max = 9;
-                }
-                let final_accel = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_ACCELERATION : dynamic_accel;
-                let final_max = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_MAX_FALL_SPEED : dynamic_max;
-                if (bird.velocity_y < final_max) { bird.velocity_y += final_accel; }
-                if (bird.y > myCanvas.height - bird.MyImg.height || bird.y < 0 - bird.MyImg.height) {
-                    bird.velocity_y = 0; game_mode = 'over';
-                }
-            }
-
-            function add_pipe(x_pos, top_of_gap, gap_width) {
-                var top_pipe = new MySprite();
-                top_pipe.MyImg = pipe_piece;
-                top_pipe.x = x_pos; top_pipe.y = top_of_gap - pipe_piece.height; top_pipe.velocity_x = pipe_speed;
-                pipes.push(top_pipe);
-
-                var bottom_pipe = new MySprite();
-                bottom_pipe.MyImg = pipe_piece;
-                bottom_pipe.flipV = true;
-                bottom_pipe.x = x_pos; bottom_pipe.y = top_of_gap + gap_width; bottom_pipe.velocity_x = pipe_speed;
-                pipes.push(bottom_pipe);
-
-                let rand = Math.random();
-                if (rand < SHIELD_SPAWN_CHANCE) {
-                    let newShield = new MySprite(); 
-                    newShield.MyImg = SHIELD_IMG;
-                    newShield.x = x_pos + (pipe_piece.width / 2) - (SHIELD_WIDTH / 2); 
-                    newShield.y = top_of_gap + (gap_width / 2) - (SHIELD_HEIGHT / 2); 
-                    newShield.velocity_x = pipe_speed; 
-                    shields.push(newShield); 
-                } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE) {
-                    let newPotion = new MySprite();
-                    newPotion.MyImg = POTION_IMG;
-                    newPotion.x = x_pos + (pipe_piece.width / 2) - (POTION_WIDTH / 2);
-                    newPotion.y = top_of_gap + (gap_width / 2) - (POTION_HEIGHT / 2);
-                    newPotion.velocity_x = pipe_speed;
-                    potions.push(newPotion);
-                }
-                if (Math.random() < STAR_SPAWN_CHANCE) { 
-                    let newStar = new MySprite(); 
-                    newStar.MyImg = STAR_IMG;
-                    newStar.x = x_pos + (pipe_piece.width / 2) - (STAR_WIDTH / 2); 
-                    newStar.y = top_of_gap + (gap_width * 0.75) - (STAR_HEIGHT / 2); 
-                    newStar.velocity_x = pipe_speed; 
-                    stars.push(newStar); 
-                }
-            }
-
-            function activateShield() {
-                isShieldActive = true;
-                if (shieldTimeoutID) clearTimeout(shieldTimeoutID);
-                shieldTimeoutID = setTimeout(() => { deactivateShield(); }, SHIELD_DURATION_MS);
-                bird.MyImg.src = SHIELDED_BIRD_IMG.src;
-            }
-
-            function deactivateShield() {
-                isShieldActive = false;
-                if (shieldTimeoutID) { clearTimeout(shieldTimeoutID); shieldTimeoutID = null; }
-                let tempImg = new Image();
-                tempImg.onload = function() { bird.MyImg = tempImg; };
-                tempImg.src = SKINS[currentSkinKey].src;
-            }
-
-            function check_for_end_game() {
-                for (var i = 0; i < pipes.length; i++) {
-                    if (ImagesTouching(bird, pipes[i])) {
-                            if (isShieldActive) {
-                                deactivateShield(); pipes[i].visible = false; continue; 
-                            } else {
-                                if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { 
-                                    currentLives--; pipes[i].visible = false; return; 
-                                }
-                                game_mode = 'over'; return; 
-                            }
-                        }
-                    }
-                    const birdCenterX = bird.x + bird.MyImg.width / 2;
-                    const birdCenterY = bird.y + bird.MyImg.height / 2;
-                    for (let i = stars.length - 1; i >= 0; i--) {
-                        const star = stars[i];
-                        let collected = false;
-                        if (currentSkinKey === 'rich' || currentSkinKey === 'black') {
-                            const dx = birdCenterX - (star.x + STAR_WIDTH / 2);
-                            const dy = birdCenterY - (star.y + STAR_HEIGHT / 2);
-                            if (Math.sqrt(dx * dx + dy * dy) < MAGNET_RADIUS) collected = true;
-                        }
-                        if (ImagesTouching(bird, star)) collected = true;
-                        if (collected) {
-                            let value = isDoubleStarsActive ? STAR_VALUE * 2 : STAR_VALUE;
-                            collectedStars += value;
-                            try { localStorage.setItem('flappyStars', collectedStars); } catch(e){}
-                            stars.splice(i, 1); playPowerUpSound();
-                        }
-                    }
-                    for (let i = potions.length - 1; i >= 0; i--) {
-                        if (ImagesTouching(bird, potions[i])) {
-                            activateDoubleStars(); potions.splice(i, 1); playPowerUpSound();
-                        }
-                    }
-                    for (let i = shields.length - 1; i >= 0; i--) {
-                        if (ImagesTouching(bird, shields[i])) {
-                            activateShield(); shields.splice(i, 1); playPowerUpSound();
-                        }
-                    }
-            }
-
-            function check_for_score_increase() {
-                for (var i = 0; i < pipes.length; i += 2) {
-                    const topPipe = pipes[i];
-                    if (topPipe.x + topPipe.MyImg.width < bird.x && topPipe.passed === false) {
-                        currentScore++; topPipe.passed = true; 
-                        if (pipes[i+1]) pipes[i+1].passed = true;
-                        if (currentScore % 10 === 0 && currentScore > 0 && currentBGIndex < 4) {
-                            currentBGIndex++; transitionText = AREA_NAMES[currentBGIndex]; transitionTimer = 80; 
-                        }
-                    }
-                }
-            }
-
-            function display_star_count() {
-                ctx.font = '20px Arial'; ctx.fillStyle = 'yellow'; ctx.textAlign = 'left';
-                ctx.fillText('Stars: ' + collectedStars, 10, 30);
-                if (isDoubleStarsActive) { ctx.fillStyle = '#ff00ff'; ctx.fillText('X2 ACTIVE!', 120, 30); }
-            }
-
-            function display_score() {
-                ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
-                ctx.strokeText('Score: ' + currentScore, 10, 65); ctx.fillStyle = 'white'; ctx.fillText('Score: ' + currentScore, 10, 65); 
-                if (currentScore < 1) {
-                    ctx.font = '14px Arial'; ctx.fillStyle = 'cyan'; ctx.fillText('Tap top-left for Shop', 10, 85);
-                } else {
-                    ctx.font = '14px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText('Shop Locked', 10, 85);
-                }
-            }
-
-            function display_lives() {
-                let y = 115; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'left';
-                if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) {
-                    ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Lives: ' + currentLives, 10, y);
-                    ctx.fillStyle = '#ff4d4d'; ctx.fillText('Lives: ' + currentLives, 10, y); y += 35;
-                }
-                if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) { 
-                    // DRAW BOMB BUTTON (Top Right)
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(myCanvas.width - 90, 10, 80, 50);
-                    ctx.fillStyle = 'white';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('BOMB', myCanvas.width - 50, 42);
-                    
-                    // Draw Charge Count (Top Left Area)
-                    ctx.textAlign = 'left';
-                    ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Charges: ' + wallDestroyCharges, 10, y);
-                    ctx.fillStyle = 'orange'; ctx.fillText('Charges: ' + wallDestroyCharges, 10, y);
-                }
-            }
-
-            function display_shop() {
-                ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
-                ctx.font = '40px Arial'; ctx.fillStyle = 'black'; ctx.textAlign = 'center';
-                ctx.fillText('Skin Shop', myCanvas.width / 2, 50);
-                ctx.font = '25px Arial'; ctx.fillStyle = 'yellow';
-                ctx.fillText('Your Stars: ' + collectedStars, myCanvas.width / 2, 90);
+            // FORCE DRAW UI ON TOP
+            if (game_mode === 'running' || game_mode === 'boss') {
+                display_star_count(); 
+                display_score(); 
+                display_lives();
                 
-                let y_offset = 150;
-                const skinKeys = Object.keys(SKINS);
-                for (let i = 0; i < skinKeys.length; i++) {
-                    const key = skinKeys[i]; const skin = SKINS[key]; let status = '';
-                    if (availableSkins.includes(key)) {
-                        status = skin.current ? ` [EQUIPPED]` : ` [OWNED]`; ctx.fillStyle = skin.current ? 'green' : 'blue';
-                    } else {
-                        status = ` [COST: ${skin.cost}]`; ctx.fillStyle = (collectedStars >= skin.cost) ? 'orange' : 'red';
-                    }
-                    ctx.textAlign = 'center'; ctx.fillText(skin.name + status, myCanvas.width / 2, y_offset); y_offset += 40;
+                ctx.font = '12px Arial'; ctx.fillStyle = 'white'; ctx.textAlign = 'left';
+                let txt = musicMuted ? "🔇 Music OFF (Click)" : "🔊 Music ON (Click)";
+                ctx.fillText(txt, 10, myCanvas.height - 10);
+            }
+
+            if (victoryTimer > 0) {
+                ctx.font = 'bold 50px Arial'; ctx.fillStyle = 'lime'; ctx.strokeStyle = 'black'; ctx.lineWidth = 5; ctx.textAlign = 'center';
+                ctx.strokeText("VICTORY!", myCanvas.width/2, myCanvas.height/2); ctx.fillText("VICTORY!", myCanvas.width/2, myCanvas.height/2); victoryTimer--;
+            }
+            if (transitionTimer > 0) {
+                ctx.font = 'bold 40px Arial'; ctx.fillStyle = 'white'; ctx.strokeStyle = 'black'; ctx.lineWidth = 4; ctx.textAlign = 'center';
+                ctx.strokeText(transitionText, myCanvas.width / 2, myCanvas.height / 2); ctx.fillText(transitionText, myCanvas.width / 2, myCanvas.height / 2); transitionTimer--;
+            }
+            if (flashTimer > 0) { ctx.fillStyle = flashColor; ctx.fillRect(0, 0, myCanvas.width, myCanvas.height); flashTimer--; }
+        }
+
+        // --- INPUT HANDLING ---
+        let lastSkinIndex = 0;
+        function Got_Player_Input(MyEvent) {
+            // FIX: Allow typing in textarea by not handling input if target is textarea/button
+            if (MyEvent.target.tagName === 'TEXTAREA' || MyEvent.target.tagName === 'BUTTON') return;
+
+            let clickX = 0; let clickY = 0;
+            if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
+                const rect = myCanvas.getBoundingClientRect();
+                const clientX = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientX : MyEvent.clientX;
+                const clientY = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientY : MyEvent.clientY;
+                if (clientX === undefined) return;
+                clickX = (clientX - rect.left) * (myCanvas.width / rect.width);
+                clickY = (clientY - rect.top) * (myCanvas.height / rect.height);
+            }
+
+            switch (game_mode) {
+            case 'prestart': game_mode = 'running'; break;
+            case 'running':
+            case 'boss': 
+                if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
+                    if (clickX < 120 && clickY > myCanvas.height - 30) { toggleMusic(); return; }
+                    if (clickX < 100 && clickY < 100 && currentScore < 1) { game_mode = 'shop'; return; }
+                    if (clickX > myCanvas.width - 100 && clickY < 100) { useWallDestruction(); return; }
+                    let current_jump = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_JUMP_AMOUNT : jump_amount;
+                    bird.velocity_y = current_jump;
                 }
-                ctx.font = '20px Arial'; ctx.fillStyle = 'black';
-                ctx.fillText('Tap Screen to Cycle Skins', myCanvas.width / 2, myCanvas.height - 70);
-                ctx.fillText('Tap BOTTOM to Exit Shop', myCanvas.width / 2, myCanvas.height - 30);
-            }
-
-            function reset_game() {
-                bird.y = myCanvas.height / 2; bird.angle = 0; bird.velocity_y = 0;
-                pipes = []; stars = []; shields = []; potions = []; currentScore = 0; pipe_spawn_timer = 0;
-                isDoubleStarsActive = false; levelReached = 1; chocolates = []; boss.stamina = 100; boss.x = CANVAS_WIDTH + 100; boss.movingIn = true;
-                victoryTimer = 0; currentBGIndex = 0; transitionText = AREA_NAMES[0]; transitionTimer = 80;
-                if (potionTimeoutID) clearTimeout(potionTimeoutID);
-                if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
-                wallDestroyCharges = (currentSkinKey === 'yellow' || currentSkinKey === 'black') ? MAX_DESTROY_CHARGES : 0;
-                add_pipe(CANVAS_WIDTH, 100, 140); deactivateShield(); 
-            }
-
-            function Do_a_Frame() {
-                if (game_mode === 'waiting_for_website') return; 
-                if (game_mode === 'shop') { display_shop(); return; }
-                
-                ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
-                if (backgroundImages[currentBGIndex].complete) { ctx.drawImage(backgroundImages[currentBGIndex], 0, 0, myCanvas.width, myCanvas.height); }
-                bird.Do_Frame_Things();
-                if (bottom_bar.complete) { if (bottom_bar_offset < -23) bottom_bar_offset = 0; ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height); }
-                
-                switch (game_mode) {
-                    case 'prestart': 
-                        ctx.font = '25px Arial'; ctx.fillStyle = 'red'; ctx.textAlign = 'center';
-                        ctx.fillText('Tap to start', myCanvas.width / 2, myCanvas.height / 4);
-                        break;
-                    case 'boss':
-                        time_game_last_running = new Date(); bottom_bar_offset += pipe_speed;
-                        make_bird_slow_and_fall(); updateBoss(); display_star_count(); display_score(); display_lives();
-                        break;
-                    case 'running':
-                        time_game_last_running = new Date(); bottom_bar_offset += pipe_speed;
-                        if (currentScore === 50) { game_mode = 'boss'; pipes = []; } else {
-                            for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); }
-                            pipe_spawn_timer += 1000 / FPS; 
-                            if (pipe_spawn_timer > PIPE_SPAWN_INTERVAL_MS) { 
-                                let gap_size = Math.max(90, 140 - (currentScore * 2)); 
-                                let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; 
-                                add_pipe(myCanvas.width, top_of_gap, gap_size); pipe_spawn_timer = 0;
-                            }
+                if (MyEvent.type === 'keydown' && MyEvent.keyCode === 83) { if (currentScore < 1) game_mode = 'shop'; }
+                if (MyEvent.type === 'keydown' && MyEvent.keyCode === 68) { useWallDestruction(); }
+                if (MyEvent.type === 'keydown' && (MyEvent.key === 'Delete' || MyEvent.keyCode === 46)) { hitBossTwo(); }
+                if (MyEvent.type === 'keydown' && MyEvent.key) {
+                     cheatBuffer += MyEvent.key; if (cheatBuffer.length > 10) cheatBuffer = cheatBuffer.slice(-10); 
+                     
+                     // GOD MODE TOGGLE
+                     if (cheatBuffer.endsWith("10101010")) {
+                        if (currentLives < 100) { 
+                            currentLives = 100; 
+                            collectedStars += 999999; 
+                            localStorage.setItem('flappyStars', collectedStars);
+                            updateMenuStats();
+                            showCheatFeedback("GOD MODE + RICH!"); 
                         }
-                        make_bird_slow_and_fall(); check_for_end_game(); check_for_score_increase();
-                        [pipes, shields, stars, potions].forEach(arr => {
-                            for (let i = arr.length - 1; i >= 0; i--) {
-                                if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things();
-                            }
-                        });
-                        display_star_count(); display_score(); display_lives(); 
-                        break;
-                    case 'over':
-                        make_bird_slow_and_fall(); ctx.font = '30px Arial'; ctx.fillStyle = 'red'; ctx.textAlign = 'center';
-                        ctx.fillText('Game Over', myCanvas.width / 2, 100); ctx.fillText('Score: ' + currentScore, myCanvas.width / 2, 150);
-                        break;
+                        else { 
+                            if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
+                            showCheatFeedback("GOD MODE OFF"); 
+                        }
+                        playPowerUpSound(); cheatBuffer = "";
+                     }
+                     // 69 CHEAT
+                     if (cheatBuffer.endsWith("69") && !redeemedCodes.includes("69")) {
+                         collectedStars += 69; redeemedCodes.push("69");
+                         localStorage.setItem('flappyRedeemed', JSON.stringify(redeemedCodes)); localStorage.setItem('flappyStars', collectedStars);
+                         playPowerUpSound(); triggerFlash("gold"); showCheatFeedback("69 STARS ADDED!"); updateMenuStats();
+                     }
                 }
-                if (victoryTimer > 0) {
-                    ctx.font = 'bold 50px Arial'; ctx.fillStyle = 'lime'; ctx.strokeStyle = 'black'; ctx.lineWidth = 5; ctx.textAlign = 'center';
-                    ctx.strokeText("VICTORY!", myCanvas.width/2, myCanvas.height/2); ctx.fillText("VICTORY!", myCanvas.width/2, myCanvas.height/2); victoryTimer--;
+                break;
+            case 'shop':
+            case 'shop_from_menu':
+                if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
+                    // Check for Category Switch (Top Right)
+                    if (clickX > myCanvas.width - 200 && clickY < 50) {
+                        shopCategory = (shopCategory === 'skins') ? 'trails' : 'skins';
+                        return; // Don't process other clicks
+                    }
+                    // Exit Shop (Bottom)
+                    if (clickY > myCanvas.height - 60) {
+                        if (game_mode === 'shop_from_menu') { document.getElementById('landing-page').style.display = 'flex'; updateMenuStats(); game_mode = 'waiting_for_website'; } 
+                        else { game_mode = 'running'; }
+                        break; 
+                    }
+                    // Cycle Items
+                    const items = shopCategory === 'skins' ? SKINS : TRAILS;
+                    const keys = Object.keys(items);
+                    lastSkinIndex = (lastSkinIndex + 1) % keys.length;
+                    purchaseOrEquipSkin(keys[lastSkinIndex]);
                 }
-                if (transitionTimer > 0) {
-                    ctx.font = 'bold 40px Arial'; ctx.fillStyle = 'white'; ctx.strokeStyle = 'black'; ctx.lineWidth = 4; ctx.textAlign = 'center';
-                    ctx.strokeText(transitionText, myCanvas.width / 2, myCanvas.height / 2); ctx.fillText(transitionText, myCanvas.width / 2, myCanvas.height / 2); transitionTimer--;
+                // Keybinds for shop
+                if (MyEvent.type === 'keydown' && MyEvent.keyCode === 69) { 
+                    if (game_mode === 'shop_from_menu') { document.getElementById('landing-page').style.display = 'flex'; updateMenuStats(); game_mode = 'waiting_for_website'; } 
+                    else { game_mode = 'running'; } break; 
                 }
-                if (flashTimer > 0) { ctx.fillStyle = flashColor; ctx.fillRect(0, 0, myCanvas.width, myCanvas.height); flashTimer--; }
+                // NEW: Press 1-7 to buy/equip
+                if (MyEvent.type === 'keydown') {
+                    const keyIndex = MyEvent.keyCode - 49; // 1 is 49, 2 is 50, etc.
+                    const items = shopCategory === 'skins' ? SKINS : TRAILS;
+                    const keys = Object.keys(items);
+                    if (keyIndex >= 0 && keyIndex < keys.length) {
+                        purchaseOrEquipSkin(keys[keyIndex]);
+                    }
+                }
+                break;
+            case 'over':
+                if (new Date() - time_game_last_running > 1000) {
+                    document.getElementById('landing-page').style.display = 'flex'; updateMenuStats(); game_mode = 'waiting_for_website';
+                    bgMusic.pause(); bgMusic.currentTime = 0; voidMusic.pause();
+                }
+                break;
+            case 'waiting_for_website':
+                 if (MyEvent.type === 'keydown' && MyEvent.key) {
+                     cheatBuffer += MyEvent.key; if (cheatBuffer.length > 10) cheatBuffer = cheatBuffer.slice(-10); 
+                     
+                     // GOD MODE TOGGLE IN MENU
+                     if (cheatBuffer.endsWith("10101010")) {
+                        collectedStars += 999999; 
+                        localStorage.setItem('flappyStars', collectedStars);
+                        updateMenuStats();
+                        showCheatFeedback("GOD MODE ENABLED"); playPowerUpSound(); cheatBuffer = "";
+                     }
+
+                     if (cheatBuffer.endsWith("69") && !redeemedCodes.includes("69")) {
+                         collectedStars += 69; redeemedCodes.push("69");
+                         localStorage.setItem('flappyRedeemed', JSON.stringify(redeemedCodes)); localStorage.setItem('flappyStars', collectedStars);
+                         playPowerUpSound(); showCheatFeedback("69 STARS ADDED!"); updateMenuStats();
+                     }
+                }
+                break;
             }
+            if (MyEvent.cancelable) MyEvent.preventDefault();
+        }
 
-            var bottom_bar = new Image(); bottom_bar.src = 'red.png';
-            var pipe_piece = new Image(); pipe_piece.onload = reset_game; pipe_piece.src = 'wall.png';
-            var bird = new MySprite(SKINS[currentSkinKey].src); bird.x = myCanvas.width / 3; bird.y = myCanvas.height / 2;
+        window.addEventListener('touchstart', Got_Player_Input, {passive: false});
+        window.addEventListener('mousedown', Got_Player_Input);
+        window.addEventListener('keydown', Got_Player_Input); 
 
-            setInterval(Do_a_Frame, 1000 / FPS);
+        window.onload = function() {
+            myCanvas = document.getElementById("myCanvas");
+            if (!myCanvas) { console.error("Canvas not found!"); return; }
+            ctx = myCanvas.getContext('2d');
+            myCanvas.width = CANVAS_WIDTH; 
+            
+            // Start the loop securely
+            updateMenuStats();
+            gameInterval = setInterval(Do_a_Frame, 1000 / FPS);
+            // Reset game state to be ready
+            reset_game();
         };
      </script> 
  </body> 
 </html>
-
