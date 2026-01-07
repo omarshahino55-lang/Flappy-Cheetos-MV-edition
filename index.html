@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v7.2 Matrix Fix</title> 
+     <title>Flying Cheetos: v7.4 Speed Tweak</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -216,7 +216,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad; box-shadow: 0 4px 0 #6c3483;" onclick="openSuggestions()">SUGGESTIONS</button>
              </div>
              
-             <div class="version-text">v7.2 Matrix Fix</div>
+             <div class="version-text">v7.4 Speed Tweak</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -811,8 +811,8 @@
             potionTimeoutID = setTimeout(() => { isDoubleStarsActive = false; potionTimeoutID = null; }, POTION_DURATION_MS);
         }
         function setGameSpeed(slow) {
-           // We no longer change FPS. We change speedMultiplier.
-           if (slow) speedMultiplier = 0.5; else speedMultiplier = 1;
+           // Buffed: Changed from 0.5 to 0.7 so it's not "too" slow
+           if (slow) speedMultiplier = 0.7; else speedMultiplier = 1;
         }
         function activateSlowMotion() {
             isSlowMotionActive = true; setGameSpeed(true); slowMoEndTime = Date.now() + SLOW_POTION_DURATION_MS;
@@ -983,6 +983,17 @@
                     if (currentScore % 10 === 0 && currentScore > 0 && currentBGIndex < 4) {
                         currentBGIndex++; 
                         updateDifficulty(); // UPDATE SPEED
+                        
+                        // FIX: Prevent Pipe Collision on Transition
+                        // 1. Reset spawn timer so new pipe doesn't spawn instantly
+                        pipe_spawn_timer = 0; 
+                        
+                        // 2. Update velocity of ALL existing pipes/items to match new speed
+                        // so new faster pipes don't crash into old slower pipes
+                        [pipes, shields, stars, potions, slowPotions].forEach(arr => {
+                            arr.forEach(obj => { obj.velocity_x = pipe_speed; });
+                        });
+
                         transitionText = AREA_NAMES[currentBGIndex]; transitionTimer = 80; 
                         if (currentBGIndex === 4 && !musicMuted) { bgMusic.pause(); bgMusic.currentTime = 0; voidMusic.play().catch(e => console.log(e)); }
                     }
@@ -1089,12 +1100,13 @@
                 ctx.font = 'bold 20px Arial'; ctx.fillStyle = 'white'; 
                 ctx.fillText(`[${i+1}]`, myCanvas.width / 2 - 200, y_offset);
 
+                // Make clickable area clearer (visual only, logic in input)
                 ctx.font = '25px Arial'; ctx.fillStyle = (collectedStars >= item.cost || owned) ? (item.current ? 'green' : 'blue') : 'red';
                 ctx.fillText(item.name + status, myCanvas.width / 2, y_offset); y_offset += 35;
             }
             
             ctx.font = '20px Arial'; ctx.fillStyle = 'black';
-            ctx.fillText('Press 1-7 to Buy/Equip', myCanvas.width / 2, myCanvas.height - 70);
+            ctx.fillText('Tap Item to Buy/Equip', myCanvas.width / 2, myCanvas.height - 70);
             ctx.fillText('Tap BOTTOM to Exit Shop', myCanvas.width / 2, myCanvas.height - 30);
         }
 
@@ -1312,11 +1324,20 @@
                         else { game_mode = 'running'; }
                         break; 
                     }
-                    // Cycle Items
-                    const items = shopCategory === 'skins' ? SKINS : TRAILS;
-                    const keys = Object.keys(items);
-                    lastSkinIndex = (lastSkinIndex + 1) % keys.length;
-                    purchaseOrEquipSkin(keys[lastSkinIndex]);
+                    
+                    // ITEM SELECTION LOGIC (New)
+                    // Y starts at 140, each item +35. Text is centered horizontally.
+                    // Let's detect if click is within the vertical list area.
+                    if (clickY >= 120 && clickY <= 400) {
+                        const items = shopCategory === 'skins' ? SKINS : TRAILS;
+                        const keys = Object.keys(items);
+                        // Approximate item index based on Y click
+                        let indexClicked = Math.floor((clickY - 120) / 35);
+                        
+                        if (indexClicked >= 0 && indexClicked < keys.length) {
+                             purchaseOrEquipSkin(keys[indexClicked]);
+                        }
+                    }
                 }
                 // Keybinds for shop
                 if (MyEvent.type === 'keydown' && MyEvent.keyCode === 69) { 
