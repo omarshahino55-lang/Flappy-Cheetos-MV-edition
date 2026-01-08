@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v7.4 Speed Tweak</title> 
+     <title>Flying Cheetos: v8.3 Pipe Smash</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -61,11 +61,24 @@
          }
          #delete-boss-btn:active { background-color: darkred; transform: translateX(-50%) scale(0.95); }
 
+         /* DASH BUTTON (DOORDASH & LEGENDARY) */
+         #dash-btn {
+             display: none; /* Shown only when DoorDash/Legendary equipped AND playing */
+             position: absolute; bottom: 20px; right: 20px;
+             background-color: #ff4500; color: white;
+             font-family: 'Press Start 2P', cursive; font-size: 16px;
+             padding: 15px 15px; border: 3px solid white; border-radius: 50%;
+             cursor: pointer; z-index: 80; box-shadow: 0 0 10px orange;
+             width: 80px; height: 80px; text-align: center; line-height: 40px;
+         }
+         #dash-btn:active { transform: scale(0.9); background-color: #d35400; }
+
          /* MOBILE SCALING */
          @media (max-width: 640px) {
              #game-container { width: 100vw; height: 75vw; }
              #landing-page h1 { font-size: 35px !important; }
              .update-badge { font-size: 14px !important; }
+             #dash-btn { width: 60px; height: 60px; font-size: 10px; line-height: 25px; bottom: 10px; right: 10px; }
          }
 
          /* MAIN MENU */
@@ -128,9 +141,10 @@
          .modal {
              display: none; position: absolute; top: 50%; left: 50%;
              transform: translate(-50%, -50%); width: 80%; height: 80%;
-             background: rgba(0, 0, 0, 0.9); border: 4px solid white;
+             background: rgba(0, 0, 0, 0.95); border: 4px solid white;
              border-radius: 15px; z-index: 20; padding: 20px;
              box-sizing: border-box; overflow-y: auto; font-family: 'Roboto', sans-serif;
+             -webkit-overflow-scrolling: touch; 
          }
          
          .modal h2 { color: #f7941d; text-align: center; margin-top: 0; font-family: 'Pacifico', cursive; font-size: 30px;}
@@ -152,19 +166,34 @@
          .ach-desc { font-size: 12px; color: #ccc; }
          .achievement-item.unlocked .ach-desc { color: #333; }
 
-         /* SUGGESTIONS FORM */
+         /* SUGGESTIONS & ADMIN LOGS */
          textarea {
-             width: 100%; height: 150px;
+             width: 100%; height: 100px;
              background: #222; color: white;
              border: 1px solid #555; padding: 10px;
              font-family: sans-serif; resize: none; margin-bottom: 10px;
-             z-index: 1000; position: relative;
+             z-index: 1000; position: relative; box-sizing: border-box;
          }
          .send-btn {
              width: 100%; padding: 10px;
              background: #f7941d; border: none; color: white;
-             font-weight: bold; cursor: pointer;
+             font-weight: bold; cursor: pointer; margin-bottom: 20px;
          }
+         
+         .admin-header {
+            color: #ccc; font-size: 14px; border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+         }
+         .clear-btn { background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 10px; border-radius: 3px; }
+         
+         #suggestionsList {
+            max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;
+         }
+         .suggestion-entry {
+             background: #333; padding: 8px; border-radius: 5px; font-size: 12px; color: #ddd;
+             border-left: 3px solid #f7941d;
+         }
+         .suggestion-time { font-size: 10px; color: #888; display: block; margin-top: 3px; }
 
          /* CHEAT CODE FEEDBACK */
          #cheat-feedback {
@@ -195,6 +224,7 @@
 
      <div id="game-container"> 
          <button id="delete-boss-btn" onclick="hitBossTwo()">DELETE</button>
+         <button id="dash-btn" onclick="triggerDash()">DASH</button>
 
          <div id="cheat-feedback">CODE REDEEMED!</div>
          <div id="audio-status">Audio: Initializing...</div>
@@ -216,7 +246,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad; box-shadow: 0 4px 0 #6c3483;" onclick="openSuggestions()">SUGGESTIONS</button>
              </div>
              
-             <div class="version-text">v7.4 Speed Tweak</div>
+             <div class="version-text">v8.3 Pipe Smash</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -227,9 +257,16 @@
              <div id="suggestionsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('suggestionsModal')">X</button>
                  <h2>Suggestions</h2>
-                 <p style="color:white; font-size:14px; text-align:center;">Have an idea? Send it to me!</p>
+                 <p style="color:#aaa; font-size:12px; text-align:center;">Leave a note for the Admin!</p>
+                 
                  <textarea id="suggestionText" placeholder="Type your suggestion here..."></textarea>
                  <button class="send-btn" onclick="sendSuggestion()">SEND SUGGESTION</button>
+
+                 <div class="admin-header">
+                     <span>Inbox / Logs (Admin Only)</span>
+                     <button class="clear-btn" onclick="clearSuggestions()">Clear Logs</button>
+                 </div>
+                 <div id="suggestionsList"></div>
              </div>
 
          </div> 
@@ -256,6 +293,7 @@
         const POTION_IMG = new Image(); POTION_IMG.src = 'potion.png';
         const SLOW_POTION_IMG = new Image(); SLOW_POTION_IMG.src = 'slow_potion.png'; 
         const STAR_IMG = new Image(); STAR_IMG.src = 'star.png'; 
+        const DOORDASH_IMG = new Image(); DOORDASH_IMG.src = 'doordash_cheetos.png'; 
         var bottom_bar = new Image(); bottom_bar.src = 'red.png';
         var pipe_piece = new Image(); pipe_piece.src = 'wall.png';
         
@@ -274,7 +312,7 @@
         
         const voidMusic = new Audio('void.mp3');
         voidMusic.loop = true;
-        voidMusic.volume = 0.5;
+        voidMusic.volume = 1.0; 
 
         function updateAudioStatus(msg, color) {
             let el = document.getElementById('audio-status');
@@ -335,17 +373,25 @@
         // --- PHYSICS ---
         var jump_amount = -7; var max_fall_speed = +8; var acceleration = 0.6;      
         const SUPER_JUMP_AMOUNT = -3.8; const SUPER_ACCELERATION = 0.18; const SUPER_MAX_FALL_SPEED = +3.5;     
-        const MAGNET_RADIUS = 100; 
+        // BUFFED MAGNET RADIUS
+        const MAGNET_RADIUS = 300; 
         const INITIAL_LIVES = 3; 
         let currentLives = 0; 
         const MAX_DESTROY_CHARGES = 2;
         let wallDestroyCharges = 0;
         const WALLS_TO_DESTROY = 2; 
+
+        // NEW: DASH MECHANIC
+        let dashCharges = 0;
+        let isDashActive = false;
+        // Dash duration ~1.7 seconds (40FPS * 1.7 = 68 frames)
+        const DASH_DURATION = 68; 
+        let dashTimer = 0;
         
         // SPEED LOGIC
         let pipe_speed = -2;
         let currentSpawnInterval = 2500; // ms
-        let speedMultiplier = 1; // NEW: Controls global time scale for items/enemies
+        let speedMultiplier = 1; // Controls global time scale
 
         var time_game_last_running;
         var bottom_bar_offset = 0;
@@ -370,7 +416,7 @@
         // --- SKINS, TRAILS & STARS ---
         let collectedStars = 0;
         let stars = []; 
-        const STAR_WIDTH = 20; const STAR_HEIGHT = 20; const STAR_VALUE = 1; const STAR_SPAWN_CHANCE = 0.5; 
+        const STAR_WIDTH = 20; const STAR_HEIGHT = 20; const STAR_VALUE = 1; 
 
         // SKINS DATA
         const SKINS = {
@@ -378,19 +424,20 @@
             'red':     { src: 'player_red.png', cost: 30, current: false, name: 'Cute Cheetos' },
             'tough':   { src: 'player_tough.png', cost: 150, current: false, name: 'Tough Cheetos' }, 
             'rich':    { src: 'player_rich.png', cost: 150, current: false, name: 'Rich Cheetos' }, 
+            'doordash':{ src: 'doordash_cheetos.png', cost: 200, current: false, name: 'DoorDash Cheetos' }, 
             'happy':   { src: 'player_happy.png', cost: 250, current: false, name: 'Happy Cheetos' }, 
             'yellow':  { src: 'player_yellow.png', cost: 300, current: false, name: 'Terrorist Cheetos' }, 
-            'black':   { src: 'player_black.png', cost: 650, current: false, name: 'Legendary Cheetos' } 
+            'black':   { src: 'player_black.png', cost: 700, current: false, name: 'Legendary Cheetos' } 
         };
 
         // TRAILS DATA
         const TRAILS = {
-            'none':    { color: 'none', cost: 0, current: true, name: 'No Trail' },
-            'blue':    { color: '#00ccff', cost: 30, current: false, name: 'Blue Trail' },
-            'red':     { color: '#ff3333', cost: 30, current: false, name: 'Red Trail' },
-            'green':   { color: '#33ff33', cost: 30, current: false, name: 'Green Trail' },
-            'purple':  { color: '#bf00ff', cost: 40, current: false, name: 'Purple Trail' },
-            'rainbow': { color: 'rainbow', cost: 70, current: false, name: 'Rainbow Trail' }
+            'trail_none':    { color: 'none', cost: 0, current: true, name: 'No Trail' },
+            'trail_blue':    { color: '#00ccff', cost: 30, current: false, name: 'Blue Trail' },
+            'trail_red':     { color: '#ff3333', cost: 30, current: false, name: 'Red Trail' },
+            'trail_green':   { color: '#33ff33', cost: 30, current: false, name: 'Green Trail' },
+            'trail_purple':  { color: '#bf00ff', cost: 40, current: false, name: 'Purple Trail' },
+            'trail_rainbow': { color: 'rainbow', cost: 70, current: false, name: 'Rainbow Trail' }
         };
         let trailHistory = []; 
         let shopCategory = 'skins'; 
@@ -409,9 +456,9 @@
             }
         } catch(e) {}
 
-        let availableTrails = ['none'];
-        try { availableTrails = JSON.parse(localStorage.getItem('flappyTrails')) || ['none']; } catch(e) {}
-        let currentTrailKey = 'none';
+        let availableTrails = ['trail_none'];
+        try { availableTrails = JSON.parse(localStorage.getItem('flappyTrails')) || ['trail_none']; } catch(e) {}
+        let currentTrailKey = 'trail_none';
         try {
             if (localStorage.getItem('currentTrail')) {
                 currentTrailKey = localStorage.getItem('currentTrail');
@@ -437,8 +484,11 @@
         } catch(e) {}
         let highScore = 0;
         try { highScore = parseInt(localStorage.getItem('flappyHighScore')) || 0; } catch(e) {}
-
-        // ==========================================
+        
+        // --- SUGGESTIONS STORAGE ---
+        let adminSuggestions = [];
+        try { adminSuggestions = JSON.parse(localStorage.getItem('flappySuggestions')) || []; } catch(e) {}
+// ==========================================
         //           HELPER CLASSES & FUNCTIONS
         // ==========================================
 
@@ -479,7 +529,7 @@
             if (!this.MyImg.complete || this.MyImg.naturalWidth === 0) return; 
             
             // --- DRAW TRAIL ---
-            if (this === bird && currentTrailKey !== 'none' && (game_mode === 'running' || game_mode === 'boss')) {
+            if (this === bird && currentTrailKey !== 'trail_none' && (game_mode === 'running' || game_mode === 'boss')) {
                 // 1. Push new point at the TAIL (Left side)
                 trailHistory.push({
                     x: this.x + 5, 
@@ -496,7 +546,8 @@
 
                 if (trailHistory.length > 1) {
                     ctx.beginPath();
-                    ctx.lineWidth = 4;
+                    ctx.lineWidth = 25; // INCREASED TRAIL HEIGHT/THICKNESS (Now 25px)
+                    ctx.lineJoin = 'round'; // Smooth corners
                     ctx.lineCap = 'round';
                     
                     if (TRAILS[currentTrailKey].color === 'rainbow') {
@@ -525,6 +576,11 @@
                 ctx.beginPath(); ctx.arc(0, 0, this.MyImg.width / 2 + 5, 0, 2 * Math.PI);
                 ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; ctx.fill(); ctx.closePath();
             }
+            // Dash Visuals
+            if (isDashActive && this === bird) {
+                ctx.globalAlpha = 0.5; // Ghostly
+            }
+
             if (this.visible) ctx.drawImage(this.MyImg, -this.MyImg.width / 2, -this.MyImg.height / 2);
             
             // APPLY MOVEMENT
@@ -553,6 +609,64 @@
         }
 
         // ==========================================
+        //           SUGGESTIONS LOGIC
+        // ==========================================
+        
+        window.openSuggestions = function() {
+            document.getElementById('suggestionsModal').style.display = 'block';
+            renderSuggestions();
+        }
+
+        window.sendSuggestion = function() {
+            const textArea = document.getElementById('suggestionText');
+            const text = textArea.value.trim();
+            if (text) {
+                // Add to array
+                const newEntry = {
+                    text: text,
+                    timestamp: new Date().toLocaleString()
+                };
+                adminSuggestions.unshift(newEntry); // Add to top
+                
+                // Save to LocalStorage
+                localStorage.setItem('flappySuggestions', JSON.stringify(adminSuggestions));
+                
+                // Reset UI
+                textArea.value = '';
+                renderSuggestions();
+                showCheatFeedback("SUGGESTION SENT!");
+            }
+        }
+
+        window.clearSuggestions = function() {
+            if (confirm("Clear all logs? This cannot be undone.")) {
+                adminSuggestions = [];
+                localStorage.removeItem('flappySuggestions');
+                renderSuggestions();
+            }
+        }
+
+        function renderSuggestions() {
+            const list = document.getElementById('suggestionsList');
+            list.innerHTML = '';
+            
+            if (adminSuggestions.length === 0) {
+                list.innerHTML = '<div style="color:#555; text-align:center; padding:10px;">No logs yet.</div>';
+                return;
+            }
+
+            adminSuggestions.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-entry';
+                div.innerHTML = `
+                    ${entry.text}
+                    <span class="suggestion-time">${entry.timestamp}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // ==========================================
         //           CORE GAME LOGIC
         // ==========================================
 
@@ -565,6 +679,19 @@
                  bossIntroState = 4; bossIntroTimer = 150; 
                  document.getElementById('game-container').className = "";
             }
+        }
+
+        window.triggerDash = function() {
+            // BUFFED: Legendary ('black') now also has Dash
+            if ((currentSkinKey !== 'doordash' && currentSkinKey !== 'black') || dashCharges <= 0 || isDashActive || game_mode !== 'running') return;
+            
+            dashCharges--;
+            isDashActive = true;
+            dashTimer = DASH_DURATION;
+            // Sound effect?
+            flapSound.currentTime = 0; flapSound.play(); 
+            // Visual effect
+            triggerFlash("rgba(255,165,0,0.3)");
         }
 
         function triggerFlash(color) { flashColor = color; flashTimer = 10; }
@@ -591,7 +718,15 @@
         window.startGame = function() {
             var landing = document.getElementById('landing-page');
             if(landing) {
-                landing.style.display = 'none'; reset_game(); game_mode = 'running'; 
+                landing.style.display = 'none'; 
+                reset_game(); 
+                game_mode = 'running'; 
+                
+                // SHOW BUTTON ONLY ON START (DoorDash OR Legendary)
+                if (currentSkinKey === 'doordash' || currentSkinKey === 'black') {
+                    document.getElementById('dash-btn').style.display = 'block';
+                }
+
                 if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
             }
         }
@@ -623,8 +758,7 @@
         }
         
         window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
-        window.openSuggestions = function() { document.getElementById('suggestionsModal').style.display = 'block'; }
-        window.sendSuggestion = function() { window.location.href = `mailto:email@example.com`; closeModal('suggestionsModal'); }
+        // window.openSuggestions is defined in the Suggestions Logic block above
 
         function spawnChocolate() {
             let choc = new MySprite(); choc.MyImg = CHOCO_IMG;
@@ -715,6 +849,11 @@
                     unlockAchievement('monster'); triggerFlash("lime"); 
                     collectedStars += 100; localStorage.setItem('flappyStars', collectedStars);
                     showCheatFeedback("BOSS DEFEATED! +100 STARS");
+                    
+                    // NEW: Extra Lives Reward (regardless of skin)
+                    currentLives += 2;
+                    showCheatFeedback("BOSS DEFEATED! +2 LIVES");
+
                     victoryTimer = 100; game_mode = 'running'; currentScore = 51; 
                     boss.x = CANVAS_WIDTH + 500; chocolates = []; pipe_spawn_timer = 0; bossIntroState = 0; boss.movingIn = true; boss.stamina = 100;
                 }
@@ -770,7 +909,9 @@
 
         function purchaseOrEquipSkin(key) {
             // Check if it's a skin or trail
-            if (SKINS[key]) {
+            // FIX: Added 'trail_' prefix check to differentiate
+            
+            if (SKINS[key] && shopCategory === 'skins') {
                 const skin = SKINS[key];
                 if (availableSkins.includes(key)) {
                     if (!skin.current) {
@@ -780,6 +921,18 @@
                         tempImg.src = skin.src; currentSkinKey = key; 
                         localStorage.setItem('currentSkin', key);
                         if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { wallDestroyCharges = MAX_DESTROY_CHARGES; }
+                        
+                        // DoorDash & Legendary Logic
+                        if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { 
+                            dashCharges = 5; 
+                            // Only show if in-game (not menu)
+                            if (game_mode === 'running' || game_mode === 'boss') {
+                                document.getElementById('dash-btn').style.display = 'block'; 
+                            }
+                        } else { 
+                            document.getElementById('dash-btn').style.display = 'none'; 
+                        }
+                        
                         if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
                     }
                 } else if (collectedStars >= skin.cost) {
@@ -787,7 +940,7 @@
                     localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappySkins', JSON.stringify(availableSkins));
                     updateMenuStats(); purchaseOrEquipSkin(key); 
                 }
-            } else if (TRAILS[key]) {
+            } else if (TRAILS[key] && shopCategory === 'trails') {
                 const trail = TRAILS[key];
                 if (availableTrails.includes(key)) {
                     if (!trail.current) {
@@ -834,6 +987,12 @@
         }
 
         function make_bird_slow_and_fall() {
+            // FIX: If dashing, override gravity completely (Hover Mode)
+            if (isDashActive) {
+                bird.velocity_y = 0; 
+                return; // SKIP GRAVITY LOGIC
+            }
+
             let final_accel = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_ACCELERATION : acceleration;
             let final_max = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_MAX_FALL_SPEED : max_fall_speed;
             
@@ -908,7 +1067,11 @@
                 let newSlow = new MySprite(); newSlow.MyImg = SLOW_POTION_IMG;
                 slowPotions.push(syncVoidItem(newSlow, top_of_gap + gap_width/2 - 15));
             }
-            if (Math.random() < STAR_SPAWN_CHANCE) { 
+            
+            // NEW: DYNAMIC STAR SPAWN CHANCE
+            // 0.5 (Base) + 0.1 per level. (0.5, 0.6, 0.7, 0.8, 0.9)
+            let currentStarChance = 0.5 + (currentBGIndex * 0.1);
+            if (Math.random() < currentStarChance) { 
                 let newStar = new MySprite(); newStar.MyImg = STAR_IMG;
                 stars.push(syncVoidItem(newStar, top_of_gap + gap_width*0.75 - 10));
             }
@@ -932,13 +1095,19 @@
             deathMessage = msg || "Game Over";
             game_mode = 'over';
             document.getElementById('delete-boss-btn').style.display = 'none';
+            document.getElementById('dash-btn').style.display = 'none';
             document.getElementById('game-container').className = ""; 
         }
 
         function check_for_end_game() {
             for (var i = 0; i < pipes.length; i++) {
                 if (ImagesTouching(bird, pipes[i])) {
-                    if (isShieldActive) { deactivateShield(); pipes[i].visible = false; continue; } 
+                    if (isShieldActive || isDashActive) { 
+                        // Dash or Shield ignores collision (Dash handles phases)
+                        if (isShieldActive) { deactivateShield(); pipes[i].visible = false; }
+                        // Dash just passes through, no logic needed here other than not dying
+                        continue; 
+                    } 
                     else {
                         if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; pipes[i].visible = false; return; }
                         triggerGameOver("Game Over"); return; 
@@ -1052,7 +1221,7 @@
         function display_lives() {
             // MOVED DOWN TO Y=140
             let y = 140; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'left';
-            if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) {
+            if ((currentSkinKey === 'tough' || currentSkinKey === 'black' || currentLives > 0) && currentLives > 0) {
                 ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Lives: ' + currentLives, 10, y);
                 ctx.fillStyle = '#ff4d4d'; ctx.fillText('Lives: ' + currentLives, 10, y); y += 35;
             } else if (currentLives >= 100) { // DEV MODE DISPLAY
@@ -1060,11 +1229,20 @@
                 ctx.fillStyle = '#ff4d4d'; ctx.fillText('GOD MODE', 10, y); y += 35;
             }
             
+            // Bomb Charges
             if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) { 
                 ctx.fillStyle = 'red'; ctx.fillRect(myCanvas.width - 90, 10, 80, 50);
                 ctx.fillStyle = 'white'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText('BOMB', myCanvas.width - 50, 42);
                 ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Charges: ' + wallDestroyCharges, 10, y);
                 ctx.fillStyle = 'orange'; ctx.fillText('Charges: ' + wallDestroyCharges, 10, y);
+                y+=35;
+            }
+            
+            // Dash Charges
+            if ((currentSkinKey === 'doordash' || currentSkinKey === 'black') && dashCharges > 0) {
+                 ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3; 
+                 ctx.strokeText('Dashes: ' + dashCharges, 10, y);
+                 ctx.fillStyle = '#ff4500'; ctx.fillText('Dashes: ' + dashCharges, 10, y);
             }
         }
 
@@ -1115,6 +1293,10 @@
             pipes = []; stars = []; shields = []; potions = []; slowPotions = []; errorSigns = []; trailHistory = [];
             currentScore = 0; pipe_spawn_timer = 0;
             isDoubleStarsActive = false; isSlowMotionActive = false;
+            
+            // Reset Dash
+            isDashActive = false; dashTimer = 0;
+            
             deathMessage = "Game Over";
             
             bossIntroState = 0; bossIntroTimer = 0;
@@ -1134,6 +1316,11 @@
             if (potionTimeoutID) clearTimeout(potionTimeoutID);
             if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
             wallDestroyCharges = (currentSkinKey === 'yellow' || currentSkinKey === 'black') ? MAX_DESTROY_CHARGES : 0;
+            
+            // Reset Dash Charges & HIDE BUTTON (Only show in startGame)
+            if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { dashCharges = 5; }
+            document.getElementById('dash-btn').style.display = 'none';
+
             add_pipe(CANVAS_WIDTH, 100, 140); deactivateShield(); 
 
             voidMusic.pause(); voidMusic.currentTime = 0;
@@ -1146,6 +1333,32 @@
             
             // Safety check for context
             if (!ctx) return;
+
+            // HANDLE DASH TIMER
+            if (isDashActive) {
+                // FIXED: Increase speed while dashing for "zoom" effect
+                speedMultiplier = 3; 
+                dashTimer--;
+                
+                // === NEW FEATURE: PIPE SMASH ===
+                if (dashTimer <= 0) {
+                    // BEFORE we turn off invincibility, check if we are currently stuck in a pipe.
+                    // If we are, delete that pipe so the player doesn't instantly die next frame.
+                    for (var i = 0; i < pipes.length; i++) {
+                         if (ImagesTouching(bird, pipes[i])) {
+                             pipes[i].visible = false; // SMASH!
+                             playPowerUpSound();
+                             showCheatFeedback("SMASH!");
+                         }
+                    }
+
+                    isDashActive = false;
+                    speedMultiplier = 1; // RESET SPEED
+                }
+            } else {
+                // Ensure speed is normal if not dashing (and not slow potion)
+                if (!isSlowMotionActive) speedMultiplier = 1;
+            }
 
             ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
             if (backgroundImages[currentBGIndex].complete) { ctx.drawImage(backgroundImages[currentBGIndex], 0, 0, myCanvas.width, myCanvas.height); }
@@ -1258,7 +1471,10 @@
         let lastSkinIndex = 0;
         function Got_Player_Input(MyEvent) {
             // FIX: Allow typing in textarea by not handling input if target is textarea/button
-            if (MyEvent.target.tagName === 'TEXTAREA' || MyEvent.target.tagName === 'BUTTON') return;
+            if (MyEvent.target.tagName === 'TEXTAREA' || MyEvent.target.tagName === 'BUTTON' || MyEvent.target.tagName === 'INPUT') return;
+            
+            // FIX: Allow scrolling inside modals (Mobile Fix)
+            if (MyEvent.target.closest('.modal')) return;
 
             let clickX = 0; let clickY = 0;
             if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
@@ -1268,6 +1484,15 @@
                 if (clientX === undefined) return;
                 clickX = (clientX - rect.left) * (myCanvas.width / rect.width);
                 clickY = (clientY - rect.top) * (myCanvas.height / rect.height);
+            }
+
+            // RIGHT CLICK FOR DASH
+            if (MyEvent.type === 'mousedown' && MyEvent.button === 2) {
+                 if (game_mode === 'running' || game_mode === 'boss') {
+                     triggerDash();
+                     MyEvent.preventDefault();
+                     return;
+                 }
             }
 
             switch (game_mode) {
@@ -1284,6 +1509,9 @@
                 if (MyEvent.type === 'keydown' && MyEvent.keyCode === 83) { if (currentScore < 1) game_mode = 'shop'; }
                 if (MyEvent.type === 'keydown' && MyEvent.keyCode === 68) { useWallDestruction(); }
                 if (MyEvent.type === 'keydown' && (MyEvent.key === 'Delete' || MyEvent.keyCode === 46)) { hitBossTwo(); }
+                // DASH KEYS (Shift or D)
+                if (MyEvent.type === 'keydown' && (MyEvent.key === 'Shift' || MyEvent.key === 'd' || MyEvent.key === 'D')) { triggerDash(); }
+
                 if (MyEvent.type === 'keydown' && MyEvent.key) {
                      cheatBuffer += MyEvent.key; if (cheatBuffer.length > 10) cheatBuffer = cheatBuffer.slice(-10); 
                      
@@ -1314,7 +1542,7 @@
             case 'shop_from_menu':
                 if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
                     // Check for Category Switch (Top Right)
-                    if (clickX > myCanvas.width - 200 && clickY < 50) {
+                    if (clickX > myCanvas.width - 200 && clickY < 80) {
                         shopCategory = (shopCategory === 'skins') ? 'trails' : 'skins';
                         return; // Don't process other clicks
                     }
@@ -1380,12 +1608,14 @@
                 }
                 break;
             }
-            if (MyEvent.cancelable) MyEvent.preventDefault();
+            if (MyEvent.cancelable && MyEvent.type !== 'contextmenu') MyEvent.preventDefault();
         }
 
         window.addEventListener('touchstart', Got_Player_Input, {passive: false});
         window.addEventListener('mousedown', Got_Player_Input);
         window.addEventListener('keydown', Got_Player_Input); 
+        // Disable Context Menu on Canvas for Right Click Dash
+        window.oncontextmenu = function(e) { e.preventDefault(); }
 
         window.onload = function() {
             myCanvas = document.getElementById("myCanvas");
