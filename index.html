@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v9.2 NEW ENDING</title> 
+     <title>Flying Cheetos: v10.4 Damage Sound & UI Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -61,7 +61,7 @@
          }
          #delete-boss-btn:active { background-color: darkred; transform: translateX(-50%) scale(0.95); }
 
-         /* PAUSE BUTTON (NEW) */
+         /* PAUSE BUTTON */
          #pause-btn {
              display: none;
              position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
@@ -273,7 +273,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad; box-shadow: 0 4px 0 #6c3483;" onclick="openSuggestions()">SUGGESTIONS</button>
              </div>
              
-             <div class="version-text">v9.2 Pause Feature</div>
+             <div class="version-text">v10.4 Damage Sound & UI Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -322,6 +322,7 @@
         const SLOW_POTION_IMG = new Image(); SLOW_POTION_IMG.src = 'slow_potion.png'; 
         const STAR_IMG = new Image(); STAR_IMG.src = 'star.png'; 
         const DOORDASH_IMG = new Image(); DOORDASH_IMG.src = 'doordash_cheetos.png'; 
+        const PORTAL_IMG = new Image(); PORTAL_IMG.src = 'portal.png'; 
         var bottom_bar = new Image(); bottom_bar.src = 'red.png';
         var pipe_piece = new Image(); pipe_piece.src = 'wall.png';
         
@@ -345,6 +346,9 @@
         // NEW AUDIO ASSETS
         const alarmSound = new Audio('alarm_clock.mp3');
         const breathingSound = new Audio('breathing.mp3');
+        const shieldBreakSound = new Audio('shield_breaking.mp3');
+        const damageSound = new Audio('damage.mp3'); // NEW DAMAGE SOUND
+        
         let voidBreathingCount = 0;
         const MAX_BREATHING = 2;
 
@@ -401,6 +405,12 @@
         let flashColor = null;
         let flashTimer = 0;
         let levelReached = 1; 
+
+        // PORTAL VARIABLES
+        let portals = [];
+        const PORTAL_CHANCE = 0.10; 
+        // NEW FLAG FOR 1 PER AREA
+        let hasPortalSpawnedInThisArea = false;
 
         // --- CHEAT CODES VARIABLES ---
         let cheatBuffer = "";
@@ -548,40 +558,46 @@
             this.oscillate = false;
             this.baseY = 0;
             this.phase = 0;
+            // Parent Pipe for snap
+            this.parentPipe = null; 
         }
 
         MySprite.prototype.Do_Frame_Things = function () {
+            // SNAP TO PIPE FIX (Forces portal to stay on pipe)
+            if (this.parentPipe) {
+                 this.x = this.parentPipe.x + 10; // Lock X to pipe + offset
+                 // We don't need to update X manually if we snap it
+            } else {
+                 let mult = (this === bird) ? 1 : speedMultiplier;
+                 this.x += this.velocity_x * mult;
+            }
+
             // OSCILLATION FOR VOID PIPES & ITEMS
             if (this.oscillate && (this.isText || this.MyImg.complete)) {
                  this.y = this.baseY + Math.sin((Date.now() + this.phase) / 400) * 40;
             }
 
             // DETERMINE SPEED MULTIPLIER
-            // If it's the bird, ignore the slow motion multiplier (Player is fast)
-            // If it's anything else (pipe, enemy, background), apply slow motion
             let mult = (this === bird) ? 1 : speedMultiplier;
 
             if (this.isText) {
                 // SPECIAL HANDLING FOR "DOWN HERE" SIGN
                 if (this.text === "DOWN HERE") {
-                    // NEW: Add flashing background box and bigger text
                     ctx.fillStyle = (Math.floor(Date.now() / 200) % 2 === 0) ? "rgba(255, 0, 0, 0.5)" : "rgba(255, 255, 0, 0.5)";
                     ctx.fillRect(this.x - 10, this.y - 30, 220, 70);
-
-                    ctx.font = "bold 30px 'Courier New'"; 
-                    ctx.fillStyle = "white"; 
-                    ctx.fillText(this.text, this.x, this.y);
-                    // Draw a small arrow pointing down
+                    ctx.font = "bold 30px 'Courier New'"; ctx.fillStyle = "white"; ctx.fillText(this.text, this.x, this.y);
                     ctx.fillText("↓", this.x + 80, this.y + 35);
                 } else {
                     ctx.font = "bold 30px 'Courier New'"; ctx.fillStyle = "#00ff00"; ctx.fillText(this.text, this.x, this.y + 30);
                 }
-                this.x += this.velocity_x * mult; return; // Y is handled by oscillate
+                if (!this.parentPipe) this.x += this.velocity_x * mult; 
+                return; 
             }
             if (this.isError) {
                 ctx.fillStyle = "red"; ctx.fillRect(this.x, this.y, 100, 100);
                 ctx.font = "bold 20px Arial"; ctx.fillStyle = "white"; ctx.fillText("ERROR", this.x + 15, this.y + 55);
-                this.x += this.velocity_x * mult; this.y += this.velocity_y * mult; return;
+                if (!this.parentPipe) this.x += this.velocity_x * mult; 
+                this.y += this.velocity_y * mult; return;
             }
 
             if (!this.MyImg.complete || this.MyImg.naturalWidth === 0) return; 
@@ -619,8 +635,8 @@
 
             if (this.visible) ctx.drawImage(this.MyImg, -this.MyImg.width / 2, -this.MyImg.height / 2);
             
-            this.x = this.x + this.velocity_x * mult;
-            if (!this.oscillate) this.y = this.y + this.velocity_y * mult;
+            // Only update Y if not oscillating (handled above) and not locked? (Bird needs Y update)
+            if (!this.oscillate && !this.parentPipe) this.y = this.y + this.velocity_y * mult;
             
             ctx.restore();
         };
@@ -751,15 +767,73 @@
             // ADDED: Unlock achievement
             unlockAchievement('bite_98');
             document.getElementById('pause-btn').style.display = 'none';
+            
+            // --- FIX: HIDE DASH BUTTON IN SECRET ENDING ---
+            document.getElementById('dash-btn').style.display = 'none';
 
             game_mode = 'secret_sequence';
             secretState = 0;
             secretTimer = 200; // 5 seconds (40fps * 5)
             
-            // AGGRESSIVE AUDIO STOP
+            // AGGRESSIVE AUDIO STOP (Muted cutscene as requested)
             bgMusic.pause(); bgMusic.currentTime = 0;
             voidMusic.pause(); voidMusic.currentTime = 0;
             breathingSound.pause(); breathingSound.currentTime = 0;
+        }
+
+        function triggerPortalEffect() {
+            playPowerUpSound();
+            // 50% chance for +10 or -10
+            let outcome = Math.random() < 0.5 ? 10 : -10;
+            let tempScore = currentScore + outcome;
+
+            // CONSTRAINTS
+            if (tempScore < 0) tempScore = 0;
+
+            // Do NOT skip Boss 1 (Score 50)
+            if (currentScore < 50 && tempScore >= 50) { tempScore = 49; }
+
+            // Do NOT skip Boss 2 (Score 100)
+            if (currentScore < 100 && tempScore >= 100) { tempScore = 99; }
+            
+            currentScore = tempScore;
+            
+            // --- FIX: CLEAR PIPES IMMEDIATELY TO PREVENT MERGE/OVERLAP ---
+            pipes = [];
+            
+            // --- FIX: SYNC LEVEL WITH NEW SCORE ---
+            let oldIndex = currentBGIndex;
+            currentBGIndex = Math.floor(currentScore / 10);
+            if (currentBGIndex > 4) currentBGIndex = 4;
+            if (currentBGIndex < 0) currentBGIndex = 0;
+            
+            // Allow a new portal to spawn in this destination area
+            hasPortalSpawnedInThisArea = false; 
+
+            // Apply difficulty updates for the new level (slower/faster speed)
+            updateDifficulty();
+            
+            // Apply Audio updates if switching in/out of Void
+            if (oldIndex !== currentBGIndex) {
+                 if (currentBGIndex === 4) {
+                     bgMusic.pause(); bgMusic.currentTime = 0;
+                     if (!musicMuted) voidMusic.play();
+                 } else if (oldIndex === 4) {
+                     voidMusic.pause(); voidMusic.currentTime = 0;
+                     if (!musicMuted) bgMusic.play();
+                 }
+            }
+
+            // Visual Feedback
+            if (outcome > 0) {
+                showCheatFeedback("WARP AHEAD! +10");
+                triggerFlash("cyan");
+            } else {
+                showCheatFeedback("WARP BACK! -10");
+                triggerFlash("purple");
+                transitionText = AREA_NAMES[currentBGIndex]; 
+                transitionTimer = 80; // Show area name again if warped back
+            }
         }
 
         // --- GLOBAL BUTTON FUNCTIONS ---
@@ -904,16 +978,30 @@
                 chocolates[i].Do_Frame_Things();
                 if (ImagesTouching(bird, chocolates[i])) {
                      if (isShieldActive) { deactivateShield(); chocolates.splice(i, 1); } 
-                     else if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; chocolates.splice(i, 1); } 
-                     else { triggerGameOver("THAT WAS A CAT"); }
+                     else if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { 
+                         currentLives--; 
+                         damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e)); // PLAY DAMAGE SOUND
+                         chocolates.splice(i, 1); 
+                     } 
+                     else { 
+                         damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e)); // PLAY DAMAGE SOUND
+                         triggerGameOver("THAT WAS A CAT"); 
+                     }
                 } else if (chocolates[i].x < -50) chocolates.splice(i, 1);
             }
             for (let i = errorSigns.length - 1; i >= 0; i--) {
                 errorSigns[i].Do_Frame_Things();
                 if (ImagesTouching(bird, errorSigns[i])) {
                      if (isShieldActive) { deactivateShield(); errorSigns.splice(i, 1); } 
-                     else if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; errorSigns.splice(i, 1); } 
-                     else { triggerGameOver("you got clipped by a kid lmao"); }
+                     else if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { 
+                         currentLives--; 
+                         damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e)); // PLAY DAMAGE SOUND
+                         errorSigns.splice(i, 1); 
+                     } 
+                     else { 
+                         damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e)); // PLAY DAMAGE SOUND
+                         triggerGameOver("you got clipped by a kid lmao"); 
+                     }
                 } else if (errorSigns[i].x < -150) errorSigns.splice(i, 1);
             }
             if (bossIntroState >= 5) {
@@ -1035,6 +1123,27 @@
                 bottom_pipe.oscillate = true; bottom_pipe.baseY = bottom_pipe.y; bottom_pipe.phase = voidPhase;
             }
             pipes.push(top_pipe); pipes.push(bottom_pipe);
+            
+            // --- PORTAL SPAWN LOGIC (10% Chance, BUT ONLY 1 PER AREA, AND NO VOID) ---
+            if (!hasPortalSpawnedInThisArea && currentBGIndex !== 4 && Math.random() < PORTAL_CHANCE && !isBoss2) {
+                // 1. Hide the pipes so they don't block the player
+                top_pipe.visible = false;
+                bottom_pipe.visible = false;
+                
+                // 2. Spawn the Portal
+                let p = new MySprite();
+                p.MyImg = PORTAL_IMG;
+                
+                // 3. Anchor the Portal to the invisible pipe
+                // This ensures its X movement is identical to the world speed
+                p.parentPipe = bottom_pipe; 
+                
+                // 4. Center the portal vertically for easy access
+                p.y = myCanvas.height / 2 - 50; 
+                
+                portals.push(p);
+                hasPortalSpawnedInThisArea = true; 
+            }
 
             function syncVoidItem(obj, yPos) {
                 obj.x = x_pos + 16; obj.y = yPos; obj.velocity_x = pipe_speed;
@@ -1055,7 +1164,14 @@
         }
 
         function activateShield() { isShieldActive = true; shieldEndTime = Date.now() + SHIELD_DURATION_MS; if (shieldTimeoutID) clearTimeout(shieldTimeoutID); shieldTimeoutID = setTimeout(() => { deactivateShield(); }, SHIELD_DURATION_MS); bird.MyImg.src = SHIELDED_BIRD_IMG.src; }
-        function deactivateShield() { isShieldActive = false; if (shieldTimeoutID) { clearTimeout(shieldTimeoutID); shieldTimeoutID = null; } let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; }; tempImg.src = SKINS[currentSkinKey].src; }
+        
+        // --- ADDED SILENT RESET LOGIC ---
+        function deactivateShield(silent = false) { 
+            isShieldActive = false; 
+            if (shieldTimeoutID) { clearTimeout(shieldTimeoutID); shieldTimeoutID = null; } 
+            if (!silent) { shieldBreakSound.currentTime = 0; shieldBreakSound.play().catch(e => console.warn(e)); }
+            let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; }; tempImg.src = SKINS[currentSkinKey].src; 
+        }
 
         function triggerGameOver(msg) {
             if (currentScore === 69) { unlockAchievement('interesting'); }
@@ -1068,8 +1184,21 @@
         function check_for_end_game() {
             for (var i = 0; i < pipes.length; i++) {
                 if (ImagesTouching(bird, pipes[i])) {
+                    // --- FIX: IGNORE INVISIBLE PIPES (ANCHORS) ---
+                    if (!pipes[i].visible) continue;
+
                     if (isShieldActive || isDashActive) { if (isShieldActive) { deactivateShield(); pipes[i].visible = false; } continue; } 
-                    else { if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; pipes[i].visible = false; return; } triggerGameOver("Game Over"); return; }
+                    else { 
+                        if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { 
+                            currentLives--; 
+                            damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e)); // PLAY DAMAGE SOUND
+                            pipes[i].visible = false; 
+                            return; 
+                        } 
+                        damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e)); // PLAY DAMAGE SOUND
+                        triggerGameOver("Game Over"); 
+                        return; 
+                    }
                 }
             }
             const birdCenterX = bird.x + bird.MyImg.width / 2; const birdCenterY = bird.y + bird.MyImg.height / 2;
@@ -1088,6 +1217,15 @@
             for (let i = potions.length - 1; i >= 0; i--) { if (ImagesTouching(bird, potions[i])) { activateDoubleStars(); potions.splice(i, 1); playPowerUpSound(); } }
             for (let i = shields.length - 1; i >= 0; i--) { if (ImagesTouching(bird, shields[i])) { activateShield(); shields.splice(i, 1); playPowerUpSound(); } }
             for (let i = slowPotions.length - 1; i >= 0; i--) { if (ImagesTouching(bird, slowPotions[i])) { activateSlowMotion(); slowPotions.splice(i, 1); playPowerUpSound(); } }
+            
+            // PORTAL COLLISION CHECK
+            for (let i = portals.length - 1; i >= 0; i--) {
+                portals[i].Do_Frame_Things();
+                if (ImagesTouching(bird, portals[i])) {
+                     triggerPortalEffect();
+                     portals.splice(i, 1);
+                }
+            }
         }
 
         function check_for_score_increase() {
@@ -1101,8 +1239,13 @@
                     if (currentScore % 10 === 0 && currentScore > 0 && currentBGIndex < 4) {
                         currentBGIndex++; updateDifficulty(); 
                         pipe_spawn_timer = 0; 
-                        [pipes, shields, stars, potions, slowPotions].forEach(arr => { arr.forEach(obj => { obj.velocity_x = pipe_speed; }); });
+                        // --- FIX: ADDED PORTALS TO UPDATE LOOP ---
+                        [pipes, shields, stars, potions, slowPotions, portals].forEach(arr => { arr.forEach(obj => { obj.velocity_x = pipe_speed; }); });
                         transitionText = AREA_NAMES[currentBGIndex]; transitionTimer = 80; 
+                        
+                        // NEW LEVEL REACHED: RESET PORTAL SPAWN FLAG
+                        hasPortalSpawnedInThisArea = false; 
+
                         if (currentBGIndex === 4 && !musicMuted) { bgMusic.pause(); bgMusic.currentTime = 0; voidMusic.play().catch(e => console.log(e)); }
                     }
                     if (currentScore > 10) unlockAchievement('beginner');
@@ -1127,8 +1270,7 @@
             let displayStr = 'Score: ' + currentScore;
             if (currentBGIndex === 4 && Math.random() < 0.1) { displayStr = "Sc#re: " + Math.floor(Math.random()*999); }
             ctx.strokeText(displayStr, 10, 90); ctx.fillStyle = 'white'; ctx.fillText(displayStr, 10, 90); 
-            if (currentScore < 1) { ctx.font = '14px Arial'; ctx.fillStyle = 'cyan'; ctx.fillText('Tap top-left for Shop', 10, 110); } 
-            else { ctx.font = '14px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText('Shop Locked', 10, 110); }
+            // REMOVED IN-GAME SHOP TEXT
         }
 
         function display_lives() {
@@ -1173,11 +1315,15 @@
 
         function reset_game() {
             bird.x = myCanvas.width / 3; bird.y = myCanvas.height / 2; bird.angle = 0; bird.velocity_y = 0;
-            pipes = []; stars = []; shields = []; potions = []; slowPotions = []; errorSigns = []; trailHistory = [];
+            pipes = []; stars = []; shields = []; potions = []; slowPotions = []; errorSigns = []; trailHistory = []; portals = [];
             currentScore = 0; pipe_spawn_timer = 0; isDoubleStarsActive = false; isSlowMotionActive = false;
             isDashActive = false; dashTimer = 0; voidBreathingCount = 0; deathMessage = "Game Over";
             bossIntroState = 0; bossIntroTimer = 0; isBoss2 = false; boss2Hits = 0; deleteBtnTimer = 0; deleteBtnSpawnTimer = 0;
             errorSignCooldown = 0; secretSign = null; // Reset secret sign
+            
+            // RESET PORTAL LIMIT FLAG
+            hasPortalSpawnedInThisArea = false; 
+
             document.getElementById('delete-boss-btn').style.display = 'none'; document.getElementById('game-container').className = ""; 
             if (slowPotionTimeoutID) clearTimeout(slowPotionTimeoutID); setGameSpeed(false); 
             levelReached = 1; chocolates = []; boss.stamina = 100; boss.x = CANVAS_WIDTH + 100; boss.movingIn = true;
@@ -1189,7 +1335,8 @@
             wallDestroyCharges = (currentSkinKey === 'yellow' || currentSkinKey === 'black') ? MAX_DESTROY_CHARGES : 0;
             if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { dashCharges = 5; }
             document.getElementById('dash-btn').style.display = 'none';
-            add_pipe(CANVAS_WIDTH, 100, 140); deactivateShield(); voidMusic.pause(); voidMusic.currentTime = 0;
+            // --- PASS TRUE TO SILENT RESET SHIELD (No sound on restart) ---
+            add_pipe(CANVAS_WIDTH, 100, 140); deactivateShield(true); voidMusic.pause(); voidMusic.currentTime = 0;
             
             // Hide Video if active
             document.getElementById('jumpscare-vid').style.display = 'none';
@@ -1235,7 +1382,7 @@
                         if (pipe_spawn_timer > currentSpawnInterval) { let gap_size = 140; let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; add_pipe(myCanvas.width, top_of_gap, gap_size); pipe_spawn_timer = 0; }
                     }
                     make_bird_slow_and_fall(); check_for_end_game(); check_for_score_increase();
-                    [pipes, shields, stars, potions, slowPotions].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
+                    [pipes, shields, stars, potions, slowPotions, portals].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
                     if (currentBGIndex === 4 && Math.random() < 0.10) {
                         ctx.save(); ctx.font = 'bold 20px "Courier New", monospace'; ctx.fillStyle = Math.random() < 0.5 ? '#00FF00' : '#FFFFFF'; 
                         let gx = Math.random() * myCanvas.width; let gy = Math.random() * myCanvas.height; ctx.shadowColor = "red"; ctx.shadowOffsetX = 2;
@@ -1324,6 +1471,7 @@
             if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
                 const rect = myCanvas.getBoundingClientRect();
                 const clientX = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientX : MyEvent.clientX;
+                // --- FIXED TYPO HERE (Was causing no jump) ---
                 const clientY = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientY : MyEvent.clientY;
                 if (clientX === undefined) return;
                 clickX = (clientX - rect.left) * (myCanvas.width / rect.width);
@@ -1338,12 +1486,12 @@
             case 'boss': 
                 if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
                     if (clickX < 120 && clickY > myCanvas.height - 30) { toggleMusic(); return; }
-                    if (clickX < 100 && clickY < 100 && currentScore < 1) { game_mode = 'shop'; return; }
+                    // REMOVED IN-GAME SHOP CLICK CHECK
                     if (clickX > myCanvas.width - 100 && clickY < 100) { useWallDestruction(); return; }
                     let current_jump = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_JUMP_AMOUNT : jump_amount;
                     bird.velocity_y = current_jump;
                 }
-                if (MyEvent.type === 'keydown' && MyEvent.keyCode === 83) { if (currentScore < 1) game_mode = 'shop'; }
+                // REMOVED 'S' KEY SHORTCUT
                 if (MyEvent.type === 'keydown' && MyEvent.keyCode === 68) { useWallDestruction(); }
                 if (MyEvent.type === 'keydown' && (MyEvent.key === 'Delete' || MyEvent.keyCode === 46)) { hitBossTwo(); }
                 if (MyEvent.type === 'keydown' && (MyEvent.key === 'Shift' || MyEvent.key === 'd' || MyEvent.key === 'D')) { triggerDash(); }
@@ -1400,4 +1548,3 @@
      </script> 
  </body> 
 </html>
-
