@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v11.1 Live Leaderboard</title> 
+     <title>Flying Cheetos: v12 Global Chat</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -12,11 +12,6 @@
          /* --- CSS STYLES --- */
          body { margin: 0; background-color: #000000; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Pacifico', cursive; overflow: hidden; touch-action: none; } 
          #game-container { position: relative; width: 640px; height: 480px; box-shadow: 0 0 30px rgba(138, 43, 226, 0.3); border: 2px solid #333; background-color: #000; transition: transform 0.5s ease; } 
-
-         /* BOSS 2 CHAOS CLASSES */
-         .upside-down { transform: rotate(180deg); }
-         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite; }
-         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0) rotate(180deg); } 20%, 80% { transform: translate3d(2px, 0, 0) rotate(180deg); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(180deg); } 40%, 60% { transform: translate3d(4px, 0, 0) rotate(180deg); } }
 
          canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: crisp-edges; image-rendering: pixelated; }
 
@@ -33,12 +28,9 @@
          #login-btn { background: #4285F4; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-family: sans-serif; font-weight: bold; cursor: pointer; display: block; }
          #logout-btn { background: #333; color: white; border: 1px solid white; padding: 5px 10px; border-radius: 5px; font-family: sans-serif; cursor: pointer; display: none; font-size: 10px;}
 
-         /* MOBILE SCALING */
-         @media (max-width: 640px) { #game-container { width: 100vw; height: 75vw; } #landing-page h1 { font-size: 35px !important; } .update-badge { font-size: 14px !important; } #dash-btn { width: 60px; height: 60px; font-size: 10px; bottom: 10px; right: 10px; } }
-
          /* MAIN MENU */
          #landing-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('http://s2js.com/img/etc/flappyback.png'); background-size: cover; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; } 
-         .update-badge { background: linear-gradient(45deg, #8A2BE2, #4B0082); color: #FFD700; padding: 8px 20px; border-radius: 5px; font-size: 20px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 3px; animation: bossPulse 1s infinite; border: 2px solid #FFD700; font-family: 'Arial Black', sans-serif; }
+         .update-badge { background: linear-gradient(45deg, #27ae60, #2ecc71); color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 20px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 3px; animation: bossPulse 1s infinite; border: 2px solid #fff; font-family: 'Arial Black', sans-serif; }
          #landing-page h1 { color: #FF4500; font-size: 60px; text-shadow: 4px 4px 0px #fff; margin: 0; } 
 
          /* MENU UI */
@@ -69,23 +61,24 @@
          #leaderboardTable { width: 100%; border-collapse: collapse; color: white; margin-top: 10px; }
          #leaderboardTable th { background: #f7941d; padding: 8px; }
          #leaderboardTable td { border-bottom: 1px solid #444; padding: 8px; text-align: center; font-size: 14px; }
-         #leaderboardTable tr:nth-child(1) td { color: gold; font-weight: bold; } /* 1st place */
-         #leaderboardTable tr:nth-child(2) td { color: silver; } /* 2nd place */
-         #leaderboardTable tr:nth-child(3) td { color: #cd7f32; } /* 3rd place */
+         #leaderboardTable tr:nth-child(1) td { color: gold; font-weight: bold; } 
+         #leaderboardTable tr:nth-child(2) td { color: silver; } 
+         #leaderboardTable tr:nth-child(3) td { color: #cd7f32; }
 
-         /* SUGGESTIONS & ADMIN LOGS */
-         textarea { width: 100%; height: 100px; background: #222; color: white; border: 1px solid #555; padding: 10px; font-family: sans-serif; resize: none; margin-bottom: 10px; z-index: 1000; position: relative; box-sizing: border-box; }
-         .send-btn { width: 100%; padding: 10px; background: #f7941d; border: none; color: white; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
-         .admin-header { color: #ccc; font-size: 14px; border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-         .clear-btn { background: red; color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 10px; border-radius: 3px; }
-         #suggestionsList { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
-         .suggestion-entry { background: #333; padding: 8px; border-radius: 5px; font-size: 12px; color: #ddd; border-left: 3px solid #f7941d; }
-         .suggestion-time { font-size: 10px; color: #888; display: block; margin-top: 3px; }
-
+         /* GLOBAL CHAT STYLES */
+         #chat-box { height: 60%; overflow-y: auto; background: #222; border: 1px solid #444; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+         .chat-msg { background: #333; padding: 8px; border-radius: 8px; font-size: 12px; color: white; display: flex; gap: 8px; align-items: start; }
+         .chat-avatar { width: 24px; height: 24px; border-radius: 50%; }
+         .chat-content { display: flex; flex-direction: column; }
+         .chat-name { font-weight: bold; color: #f7941d; font-size: 10px; margin-bottom: 2px; }
+         .chat-text { color: #ddd; }
+         .chat-input-area { display: flex; gap: 5px; margin-top: 10px; }
+         #chatInput { flex-grow: 1; padding: 10px; border-radius: 5px; border: none; font-family: sans-serif; }
+         #chatSendBtn { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+         
          #cheat-feedback { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 40px; color: lime; font-family: 'Arial Black', sans-serif; display: none; text-shadow: 2px 2px 0 #000; z-index: 100; }
          #audio-status { position: absolute; top: 5px; left: 5px; color: red; font-weight: bold; background: rgba(0,0,0,0.7); padding: 5px; border-radius: 5px; font-family: sans-serif; font-size: 12px; z-index: 50; }
          #jumpscare-vid { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; object-fit: cover; background: black; }
-         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25px); } } 
          @keyframes bossPulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
      </style> 
  </head> 
@@ -110,7 +103,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">ONLINE UPDATE</div>
+             <div class="update-badge">GLOBAL CHAT UPDATE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos"> 
              
@@ -123,11 +116,11 @@
                  <button class="enter-btn" onclick="startGame()">PLAY GAME</button> 
                  <button class="enter-btn secondary-btn" onclick="openShopFromMenu()">SHOP</button>
                  <button class="enter-btn secondary-btn" onclick="openAchievements()">ACHIEVEMENTS</button>
-                 <button class="enter-btn secondary-btn" style="background-color: #27ae60; box-shadow: 0 4px 0 #1e8449;" onclick="openLeaderboard()">LEADERBOARD</button>
-                 <button class="enter-btn secondary-btn" style="background-color: #8e44ad; box-shadow: 0 4px 0 #6c3483;" onclick="openSuggestions()">SUGGESTIONS</button>
+                 <button class="enter-btn secondary-btn" style="background-color: #27ae60;" onclick="openLeaderboard()">LEADERBOARD</button>
+                 <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v11.1 Live Leaderboard</div>
+             <div class="version-text">v12 Global Chat</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -145,17 +138,16 @@
                  </table>
              </div>
 
-             <div id="suggestionsModal" class="modal">
-                 <button class="close-btn" onclick="closeModal('suggestionsModal')">X</button>
-                 <h2>Suggestions</h2>
-                 <p style="color:#aaa; font-size:12px; text-align:center;">Leave a note for the Admin!</p>
-                 <textarea id="suggestionText" placeholder="Type your suggestion here..."></textarea>
-                 <button class="send-btn" onclick="sendSuggestion()">SEND SUGGESTION</button>
-                 <div class="admin-header">
-                     <span>Inbox / Logs (Admin Only)</span>
-                     <button class="clear-btn" onclick="clearSuggestions()">Clear Logs</button>
+             <div id="chatModal" class="modal">
+                 <button class="close-btn" onclick="closeModal('chatModal')">X</button>
+                 <h2>Global Chat</h2>
+                 <div id="chat-box">
+                     <div style="color:#aaa; text-align:center; padding:20px;">Connecting to chat...<br>(Login required to post)</div>
                  </div>
-                 <div id="suggestionsList"></div>
+                 <div class="chat-input-area">
+                     <input type="text" id="chatInput" placeholder="Say something..." maxlength="100">
+                     <button id="chatSendBtn" onclick="sendMessage()">SEND</button>
+                 </div>
              </div>
 
          </div> 
@@ -169,9 +161,10 @@
 
      <script>
         // ==========================================
-        //         FIREBASE CONFIGURATION (AUTO-FILLED)
+        //         FIREBASE CONFIGURATION
         // ==========================================
         
+        // ! PASTE YOUR KEYS HERE !
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
             authDomain: "flying-cheetos.firebaseapp.com",
@@ -185,8 +178,8 @@
         let db = null;
         let auth = null;
         let currentUser = null;
+        let unsubscribeChat = null;
 
-        // Initialize Firebase safely
         try {
             if (firebaseConfig.apiKey) {
                 firebase.initializeApp(firebaseConfig);
@@ -194,7 +187,6 @@
                 db = firebase.firestore();
                 console.log("Firebase initialized");
                 
-                // Auth Listener
                 auth.onAuthStateChanged((user) => {
                     if (user) {
                         currentUser = user;
@@ -211,9 +203,7 @@
                         document.getElementById('user-avatar').style.display = 'none';
                     }
                 });
-            } else {
-                console.warn("Firebase Config missing! Leaderboard wont work.");
-            }
+            } else { console.warn("Firebase Config missing!"); }
         } catch(e) { console.error("Firebase Error:", e); }
 
         window.signInWithGoogle = function() {
@@ -221,31 +211,16 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).catch(e => alert(e.message));
         }
+        window.signOutUser = function() { if(auth) auth.signOut(); }
 
-        window.signOutUser = function() {
-            if(auth) auth.signOut();
-        }
-
+        // --- LEADERBOARD LOGIC ---
         async function saveScoreToCloud(score) {
             if (!db || !currentUser) return;
             try {
-                // Check if current score is higher than saved score
                 const docRef = db.collection('scores').doc(currentUser.uid);
                 const doc = await docRef.get();
-                if (doc.exists) {
-                    if (score > doc.data().score) {
-                         await docRef.set({
-                            name: currentUser.displayName,
-                            score: score,
-                            photo: currentUser.photoURL
-                         });
-                    }
-                } else {
-                    await docRef.set({
-                        name: currentUser.displayName,
-                        score: score,
-                        photo: currentUser.photoURL
-                    });
+                if (!doc.exists || score > doc.data().score) {
+                     await docRef.set({ name: currentUser.displayName, score: score, photo: currentUser.photoURL });
                 }
             } catch (e) { console.error("Error saving score:", e); }
         }
@@ -254,31 +229,81 @@
             document.getElementById('leaderboardModal').style.display = 'block';
             const tbody = document.getElementById('leaderboardBody');
             tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
-            
-            if (!db) { tbody.innerHTML = '<tr><td colspan="3">Database not connected</td></tr>'; return; }
-
+            if (!db) { tbody.innerHTML = '<tr><td colspan="3">Database Error (Check Console)</td></tr>'; return; }
             try {
-                // Get top 10 scores
                 const q = await db.collection('scores').orderBy('score', 'desc').limit(10).get();
                 tbody.innerHTML = '';
                 let rank = 1;
+                if(q.empty) { tbody.innerHTML = '<tr><td colspan="3">No scores yet. Play to be first!</td></tr>'; return; }
                 q.forEach((doc) => {
                     const d = doc.data();
-                    const row = `<tr>
-                        <td>#${rank}</td>
-                        <td style="display:flex;align-items:center;justify-content:center;gap:5px;">
-                           ${d.photo ? `<img src="${d.photo}" style="width:20px;border-radius:50%">` : ''} ${d.name}
-                        </td>
-                        <td>${d.score}</td>
-                    </tr>`;
+                    const row = `<tr><td>#${rank}</td><td style="display:flex;align-items:center;justify-content:center;gap:5px;">${d.photo ? `<img src="${d.photo}" style="width:20px;border-radius:50%">` : ''} ${d.name}</td><td>${d.score}</td></tr>`;
                     tbody.innerHTML += row;
                     rank++;
                 });
-                if (rank === 1) tbody.innerHTML = '<tr><td colspan="3">No scores yet.</td></tr>';
             } catch(e) {
                 console.error(e);
-                tbody.innerHTML = '<tr><td colspan="3">Error loading scores.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="color:red;font-size:10px;">Error: Create Database in Firestore Console (Test Mode)</td></tr>';
             }
+        }
+
+        // --- GLOBAL CHAT LOGIC ---
+        window.openChat = function() {
+            document.getElementById('chatModal').style.display = 'block';
+            if (!db) return;
+            
+            // Unsubscribe previous listener if exists
+            if (unsubscribeChat) unsubscribeChat();
+
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML = '<div style="color:#aaa; text-align:center; padding:10px;">Loading messages...</div>';
+
+            unsubscribeChat = db.collection('global_chat').orderBy('timestamp', 'desc').limit(50)
+                .onSnapshot((snapshot) => {
+                    chatBox.innerHTML = '';
+                    const messages = [];
+                    snapshot.forEach(doc => messages.push(doc.data()));
+                    // Reverse to show oldest at top, newest at bottom
+                    messages.reverse().forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = 'chat-msg';
+                        div.innerHTML = `<img src="${msg.photo || 'player.png'}" class="chat-avatar">
+                                         <div class="chat-content">
+                                            <div class="chat-name">${msg.name}</div>
+                                            <div class="chat-text">${msg.text}</div>
+                                         </div>`;
+                        chatBox.appendChild(div);
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll to bottom
+                }, (error) => {
+                    console.error("Chat Error:", error);
+                    chatBox.innerHTML = '<div style="color:red; text-align:center;">Error loading chat.<br>Check Database Permissions.</div>';
+                });
+        }
+
+        window.sendMessage = async function() {
+            if (!currentUser) return alert("You must login to chat!");
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            try {
+                await db.collection('global_chat').add({
+                    text: text,
+                    name: currentUser.displayName,
+                    photo: currentUser.photoURL,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                input.value = '';
+            } catch(e) {
+                alert("Could not send message. Check console.");
+                console.error(e);
+            }
+        }
+
+        window.closeModal = function(id) { 
+            document.getElementById(id).style.display = 'none'; 
+            if (id === 'chatModal' && unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
         }
 
         // ==========================================
@@ -517,10 +542,6 @@
         let highScore = 0;
         try { highScore = parseInt(localStorage.getItem('flappyHighScore')) || 0; } catch(e) {}
         
-        // --- SUGGESTIONS STORAGE ---
-        let adminSuggestions = [];
-        try { adminSuggestions = JSON.parse(localStorage.getItem('flappySuggestions')) || []; } catch(e) {}
-        
         // ==========================================
         //            HELPER CLASSES & FUNCTIONS
         // ==========================================
@@ -592,16 +613,10 @@
             return true;
         }
 
-        window.openSuggestions = function() { document.getElementById('suggestionsModal').style.display = 'block'; renderSuggestions(); }
-        window.sendSuggestion = function() {
-            const textArea = document.getElementById('suggestionText'); const text = textArea.value.trim();
-            if (text) { const newEntry = { text: text, timestamp: new Date().toLocaleString() }; adminSuggestions.unshift(newEntry); localStorage.setItem('flappySuggestions', JSON.stringify(adminSuggestions)); textArea.value = ''; renderSuggestions(); showCheatFeedback("SUGGESTION SENT!"); }
-        }
-        window.clearSuggestions = function() { if (confirm("Clear all logs? This cannot be undone.")) { adminSuggestions = []; localStorage.removeItem('flappySuggestions'); renderSuggestions(); } }
-        function renderSuggestions() {
-            const list = document.getElementById('suggestionsList'); list.innerHTML = '';
-            if (adminSuggestions.length === 0) { list.innerHTML = '<div style="color:#555; text-align:center; padding:10px;">No logs yet.</div>'; return; }
-            adminSuggestions.forEach(entry => { const div = document.createElement('div'); div.className = 'suggestion-entry'; div.innerHTML = `${entry.text} <span class="suggestion-time">${entry.timestamp}</span>`; list.appendChild(div); });
+        window.openAchievements = function() {
+            const list = document.getElementById('achievementsList'); list.innerHTML = '';
+            ALL_ACHIEVEMENTS.forEach(ach => { let div = document.createElement('div'); div.className = 'achievement-item ' + (ach.unlocked ? 'unlocked' : 'locked'); div.innerHTML = `<div><div class="ach-title">${ach.title} ${ach.unlocked ? '✅' : '🔒'}</div><div class="ach-desc">${ach.desc}</div></div>`; list.appendChild(div); });
+            document.getElementById('achievementsModal').style.display = 'block';
         }
 
         window.togglePause = function() {
@@ -654,12 +669,6 @@
             musicMuted = !musicMuted; if (musicMuted) { bgMusic.pause(); voidMusic.pause(); updateAudioStatus("Muted", "yellow"); } else { if (currentBGIndex === 4) voidMusic.play(); else bgMusic.play(); updateAudioStatus("Playing", "lime"); }
         }
         window.openShopFromMenu = function() { document.getElementById('landing-page').style.display = 'none'; game_mode = 'shop_from_menu'; }
-        window.openAchievements = function() {
-            const list = document.getElementById('achievementsList'); list.innerHTML = '';
-            ALL_ACHIEVEMENTS.forEach(ach => { let div = document.createElement('div'); div.className = 'achievement-item ' + (ach.unlocked ? 'unlocked' : 'locked'); div.innerHTML = `<div><div class="ach-title">${ach.title} ${ach.unlocked ? '✅' : '🔒'}</div><div class="ach-desc">${ach.desc}</div></div>`; list.appendChild(div); });
-            document.getElementById('achievementsModal').style.display = 'block';
-        }
-        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
 
         function spawnChocolate() { let choc = new MySprite(); choc.MyImg = CHOCO_IMG; choc.x = boss.x; choc.y = boss.y + boss.height/2; choc.velocity_x = -6; choc.velocity_y = (bird.y - boss.y) / 40; chocolates.push(choc); }
         function spawnErrorSign() { let err = new MySprite(); err.isError = true; err.x = CANVAS_WIDTH; err.y = Math.random() * (480 - 100); err.velocity_x = -9; errorSigns.push(err); }
