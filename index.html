@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.2 Global Chat Update</title> 
+     <title>Flying Cheetos: v4.3 Boss Dialogue Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -163,7 +163,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.2 Global Chat Update</div>
+             <div class="version-text">v4.3 Boss Dialogue Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -706,12 +706,27 @@
         function updateBoss() {
             if (boss.movingIn) { boss.x -= 2 * speedMultiplier; if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false; let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); return; }
             if (bossIntroState < 4) {
+                // HIDE BUTTONS DURING DIALOGUE
+                document.getElementById('dash-btn').style.display = 'none';
+                document.getElementById('bomb-btn').style.display = 'none';
+
                 let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
                 if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
                 if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
-                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } return;
+                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
+                
+                // RESTORE BUTTONS IF FIGHT STARTS (State 5)
+                if (bossIntroState === 5) {
+                    if ((currentSkinKey === 'doordash' || currentSkinKey === 'black') && dashCharges > 0) document.getElementById('dash-btn').style.display = 'flex';
+                    if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) document.getElementById('bomb-btn').style.display = 'flex';
+                }
+                return;
             }
             if (bossIntroState === 4) { 
+                // HIDE BUTTONS DURING BOSS 2 DIALOGUE
+                document.getElementById('dash-btn').style.display = 'none';
+                document.getElementById('bomb-btn').style.display = 'none';
+
                 let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); 
                 drawDialogueBox("YOU ARE MAKING A\nBIG MISTAKE"); 
                 bossIntroTimer--; 
@@ -873,22 +888,24 @@
         }
 
         function display_star_count() {
-            ctx.font = '20px Arial'; ctx.fillStyle = 'yellow'; ctx.textAlign = 'left'; ctx.fillText('Stars: ' + collectedStars, 10, 55);
+            ctx.font = '20px Arial'; ctx.fillStyle = 'yellow'; ctx.textAlign = 'left'; 
+            ctx.fillText('Stars: ' + collectedStars, 10, 80);
+            
             let infoX = 120; let now = Date.now();
-            if (isDoubleStarsActive) { let secsLeft = Math.ceil((doubleStarEndTime - now) / 1000); if (secsLeft < 0) secsLeft = 0; ctx.fillStyle = '#ff00ff'; ctx.fillText(`X2 (${secsLeft}s)`, infoX, 55); infoX += 110; }
-            if (isSlowMotionActive) { let secsLeft = Math.ceil((slowMoEndTime - now) / 1000); if (secsLeft < 0) secsLeft = 0; ctx.fillStyle = '#00ffff'; ctx.fillText(`SLOW (${secsLeft}s)`, infoX, 55); infoX += 120; }
-            if (isShieldActive) { let secsLeft = Math.ceil((shieldEndTime - now) / 1000); if (secsLeft < 0) secsLeft = 0; ctx.fillStyle = 'cyan'; ctx.fillText(`SHIELD (${secsLeft}s)`, infoX, 55); }
+            if (isDoubleStarsActive) { let secsLeft = Math.ceil((doubleStarEndTime - now) / 1000); if (secsLeft < 0) secsLeft = 0; ctx.fillStyle = '#ff00ff'; ctx.fillText(`X2 (${secsLeft}s)`, infoX, 80); infoX += 110; }
+            if (isSlowMotionActive) { let secsLeft = Math.ceil((slowMoEndTime - now) / 1000); if (secsLeft < 0) secsLeft = 0; ctx.fillStyle = '#00ffff'; ctx.fillText(`SLOW (${secsLeft}s)`, infoX, 80); infoX += 120; }
+            if (isShieldActive) { let secsLeft = Math.ceil((shieldEndTime - now) / 1000); if (secsLeft < 0) secsLeft = 0; ctx.fillStyle = 'cyan'; ctx.fillText(`SHIELD (${secsLeft}s)`, infoX, 80); }
         }
 
         function display_score() {
             ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
             let displayStr = 'Score: ' + currentScore;
             if (currentBGIndex === 4 && Math.random() < 0.1) { displayStr = "Sc#re: " + Math.floor(Math.random()*999); }
-            ctx.strokeText(displayStr, 10, 90); ctx.fillStyle = 'white'; ctx.fillText(displayStr, 10, 90); 
+            ctx.strokeText(displayStr, 10, 115); ctx.fillStyle = 'white'; ctx.fillText(displayStr, 10, 115); 
         }
 
         function display_lives() {
-            let y = 140; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'left';
+            let y = 150; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'left';
             if ((currentSkinKey === 'tough' || currentSkinKey === 'black' || currentLives > 0) && currentLives > 0) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('Lives: ' + currentLives, 10, y); ctx.fillStyle = '#ff4d4d'; ctx.fillText('Lives: ' + currentLives, 10, y); y += 35; } 
             else if (currentLives >= 100) { ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.strokeText('GOD MODE', 10, y); ctx.fillStyle = '#ff4d4d'; ctx.fillText('GOD MODE', 10, y); y += 35; }
             if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) { 
