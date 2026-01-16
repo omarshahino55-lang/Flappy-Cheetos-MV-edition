@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.3 Boss Dialogue Fix</title> 
+     <title>Flying Cheetos: v4.4 Sound Update</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -63,7 +63,7 @@
          .enter-btn { padding: 10px 30px; font-size: 24px; background-color: #f7941d; color: white; border: 3px solid #fff; border-radius: 50px; cursor: pointer; font-family: 'Pacifico', cursive; transition: transform 0.2s; box-shadow: 0 4px 0px #d35400; width: 250px; } 
          .enter-btn:active { transform: translateY(4px); box-shadow: none; }
          .secondary-btn { background-color: #3498db; font-size: 18px; box-shadow: 0 4px 0px #2980b9; }
-         .preview-img { width: 60px; margin: 5px 0; animation: float 2s infinite ease-in-out; } 
+         .preview-img { width: 60px; margin: 5px 0; animation: float 2s infinite ease-in-out; cursor: pointer; } 
          .version-text { position: absolute; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.6); font-family: sans-serif; font-size: 14px; }
 
          /* MODALS */
@@ -145,9 +145,9 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">GLOBAL CHAT UPDATE</div>
+             <div class="update-badge">SOUND UPDATE</div>
              <h1>Flying Cheetos</h1> 
-             <img src="player.png" class="preview-img" alt="Cheetos"> 
+             <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()"> 
              
              <div class="menu-stats">
                  <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
@@ -163,7 +163,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.3 Boss Dialogue Fix</div>
+             <div class="version-text">v4.4 Sound Update</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -422,6 +422,10 @@
         const breathingSound = new Audio('breathing.mp3');
         const shieldBreakSound = new Audio('shield_breaking.mp3');
         const damageSound = new Audio('damage.mp3'); 
+        // --- NEW SOUNDS ---
+        const explosionSound = new Audio('explosion.mp3');
+        const noseSound = new Audio('nose.mp3');
+
         let voidBreathingCount = 0; const MAX_BREATHING = 2;
 
         function updateAudioStatus(msg, color) { document.getElementById('audio-status').innerText = msg; document.getElementById('audio-status').style.color = color || 'white'; }
@@ -675,6 +679,12 @@
         }
         window.openShopFromMenu = function() { document.getElementById('landing-page').style.display = 'none'; game_mode = 'shop_from_menu'; }
 
+        // --- EASTER EGG SOUND FUNCTION ---
+        window.playNoseSound = function() {
+            noseSound.currentTime = 0;
+            noseSound.play().catch(e => console.warn(e));
+        }
+
         function spawnChocolate() { let choc = new MySprite(); choc.MyImg = CHOCO_IMG; choc.x = boss.x; choc.y = boss.y + boss.height/2; choc.velocity_x = -6; choc.velocity_y = (bird.y - boss.y) / 40; chocolates.push(choc); }
         function spawnErrorSign() { let err = new MySprite(); err.isError = true; err.x = CANVAS_WIDTH; err.y = Math.random() * (480 - 100); err.velocity_x = -9; errorSigns.push(err); }
         
@@ -801,7 +811,14 @@
         function useWallDestruction() {
             if (!(currentSkinKey === 'yellow' || currentSkinKey === 'black') || wallDestroyCharges <= 0) return false; 
             let destroyedSets = 0; for (let i = 0; i < pipes.length; i += 2) { if (destroyedSets >= WALLS_TO_DESTROY) break; if (pipes[i].x > bird.x + bird.MyImg.width && pipes[i].visible) { pipes[i].visible = false; if (pipes[i+1]) pipes[i+1].visible = false; destroyedSets++; } }
-            if (destroyedSets > 0) { wallDestroyCharges--; playPowerUpSound(); return true; } return false;
+            // --- UPDATED BOMB SOUND ---
+            if (destroyedSets > 0) { 
+                wallDestroyCharges--; 
+                explosionSound.currentTime = 0; 
+                explosionSound.play().catch(e => console.warn(e)); 
+                return true; 
+            } 
+            return false;
         }
 
         function make_bird_slow_and_fall() {
