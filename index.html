@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.4 Sound Update</title> 
+     <title>Flying Cheetos: v4.5 Sound Fixes</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -147,7 +147,7 @@
          <div id="landing-page"> 
              <div class="update-badge">SOUND UPDATE</div>
              <h1>Flying Cheetos</h1> 
-             <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()"> 
+             <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
              <div class="menu-stats">
                  <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
@@ -156,22 +156,22 @@
              </div>
 
              <div class="menu-buttons">
-                 <button class="enter-btn" onclick="startGame()">PLAY GAME</button> 
-                 <button class="enter-btn secondary-btn" onclick="openShopFromMenu()">SHOP</button>
-                 <button class="enter-btn secondary-btn" onclick="openAchievements()">ACHIEVEMENTS</button>
-                 <button class="enter-btn secondary-btn" style="background-color: #27ae60;" onclick="openLeaderboard()">LEADERBOARD</button>
-                 <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="openChat()">GLOBAL CHAT</button>
+                 <button class="enter-btn" onclick="playClickSound(); startGame()">PLAY GAME</button> 
+                 <button class="enter-btn secondary-btn" onclick="playClickSound(); openShopFromMenu()">SHOP</button>
+                 <button class="enter-btn secondary-btn" onclick="playClickSound(); openAchievements()">ACHIEVEMENTS</button>
+                 <button class="enter-btn secondary-btn" style="background-color: #27ae60;" onclick="playClickSound(); openLeaderboard()">LEADERBOARD</button>
+                 <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.4 Sound Update</div>
+             <div class="version-text">v4.5 Sound Fixes</div>
 
              <div id="achievementsModal" class="modal">
-                 <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
+                 <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
                  <h2>Achievements</h2>
                  <div id="achievementsList"></div>
              </div>
              <div id="leaderboardModal" class="modal">
-                 <button class="close-btn" onclick="closeModal('leaderboardModal')">X</button>
+                 <button class="close-btn" onclick="playClickSound(); closeModal('leaderboardModal')">X</button>
                  <h2>Global Leaderboard</h2>
                  <p style="text-align:center; font-size:12px; color:#aaa;">Top 10 Cheetos</p>
                  <table id="leaderboardTable">
@@ -180,14 +180,14 @@
                  </table>
              </div>
              <div id="chatModal" class="modal">
-                 <button class="close-btn" onclick="closeModal('chatModal')">X</button>
+                 <button class="close-btn" onclick="playClickSound(); closeModal('chatModal')">X</button>
                  <h2>Global Chat</h2>
                  <div id="chat-box">
                      <div style="color:#aaa; text-align:center; padding:20px;">Connecting to chat...<br>(Login required to post)</div>
                  </div>
                  <div class="chat-input-area">
                      <input type="text" id="chatInput" placeholder="Say something..." maxlength="100">
-                     <button id="chatSendBtn" onclick="sendMessage()">SEND</button>
+                     <button id="chatSendBtn" onclick="playClickSound(); sendMessage()">SEND</button>
                  </div>
              </div>
          </div> 
@@ -425,6 +425,8 @@
         // --- NEW SOUNDS ---
         const explosionSound = new Audio('explosion.mp3');
         const noseSound = new Audio('nose.mp3');
+        const buttonSound = new Audio('button.mp3');
+        const buySound = new Audio('buy.mp3');
 
         let voidBreathingCount = 0; const MAX_BREATHING = 2;
 
@@ -611,6 +613,9 @@
         }
 
         window.togglePause = function() {
+            // NEW: PLAY BUTTON SOUND
+            playClickSound();
+            
             if (game_mode !== 'running' && game_mode !== 'boss') return;
             isPaused = !isPaused; let btn = document.getElementById('pause-btn');
             if (isPaused) { btn.innerText = "►"; bgMusic.pause(); voidMusic.pause(); breathingSound.pause(); ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; ctx.fillRect(0, 0, myCanvas.width, myCanvas.height); ctx.font = "40px 'Press Start 2P', sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.fillText("PAUSED", myCanvas.width/2, myCanvas.height/2); } 
@@ -683,6 +688,12 @@
         window.playNoseSound = function() {
             noseSound.currentTime = 0;
             noseSound.play().catch(e => console.warn(e));
+        }
+
+        // --- NEW: PLAY CLICK SOUND FOR BUTTONS ---
+        window.playClickSound = function() {
+            buttonSound.currentTime = 0;
+            buttonSound.play().catch(e => console.warn(e));
         }
 
         function spawnChocolate() { let choc = new MySprite(); choc.MyImg = CHOCO_IMG; choc.x = boss.x; choc.y = boss.y + boss.height/2; choc.velocity_x = -6; choc.velocity_y = (bird.y - boss.y) / 40; chocolates.push(choc); }
@@ -772,6 +783,7 @@
                 const skin = SKINS[key]; 
                 if (availableSkins.includes(key)) { 
                     if (!skin.current) { 
+                        // EQUIPPING (No cost)
                         for (let k in SKINS) { SKINS[k].current = false; } 
                         skin.current = true; 
                         let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; }; tempImg.src = skin.src; 
@@ -782,7 +794,13 @@
                         if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0; 
                     } 
                 } else if (collectedStars >= skin.cost) { 
+                    // BUYING (Cost)
                     collectedStars -= skin.cost; availableSkins.push(key); 
+                    
+                    // NEW: Play Buy Sound
+                    buySound.currentTime = 0;
+                    buySound.play().catch(e => console.warn(e));
+
                     localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappySkins', JSON.stringify(availableSkins)); 
                     updateMenuStats(); 
                     saveUserData(); 
@@ -794,7 +812,13 @@
                 if (availableTrails.includes(key)) { 
                     if (!trail.current) { for (let k in TRAILS) { TRAILS[k].current = false; } trail.current = true; currentTrailKey = key; localStorage.setItem('currentTrail', key); } 
                 } else if (collectedStars >= trail.cost) { 
+                    // BUYING (Cost)
                     collectedStars -= trail.cost; availableTrails.push(key); 
+                    
+                    // NEW: Play Buy Sound
+                    buySound.currentTime = 0;
+                    buySound.play().catch(e => console.warn(e));
+
                     localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappyTrails', JSON.stringify(availableTrails)); 
                     updateMenuStats(); 
                     saveUserData(); 
