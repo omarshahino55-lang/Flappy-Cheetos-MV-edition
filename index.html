@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v15 Stats Update</title> 
+     <title>Flying Cheetos: v16 Bug Fixes</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -127,7 +127,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">GAME COUNTER ADDED</div>
+             <div class="update-badge">BUG FIX UPDATE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos"> 
              
@@ -145,7 +145,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v15 Stats Update</div>
+             <div class="version-text">v16 Bug Fixes</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
@@ -239,7 +239,6 @@
                 if (doc.exists) {
                     const cloudData = doc.data();
                     if (cloudData.stars > collectedStars) collectedStars = cloudData.stars;
-                    // --- SYNC GAMES PLAYED ---
                     if (cloudData.gamesPlayed && cloudData.gamesPlayed > totalGamesPlayed) {
                         totalGamesPlayed = cloudData.gamesPlayed;
                     }
@@ -253,7 +252,7 @@
                     ALL_ACHIEVEMENTS.forEach(ach => { if (savedAchievements.includes(ach.id)) ach.unlocked = true; });
 
                     localStorage.setItem('flappyStars', collectedStars);
-                    localStorage.setItem('flappyGamesPlayed', totalGamesPlayed); // Save locally
+                    localStorage.setItem('flappyGamesPlayed', totalGamesPlayed); 
                     localStorage.setItem('flappySkins', JSON.stringify(availableSkins));
                     localStorage.setItem('flappyTrails', JSON.stringify(availableTrails));
                     localStorage.setItem('flappyAchievements', JSON.stringify(savedAchievements));
@@ -269,7 +268,7 @@
             try {
                 await db.collection('users').doc(currentUser.uid).set({
                     stars: collectedStars,
-                    gamesPlayed: totalGamesPlayed, // Save to cloud
+                    gamesPlayed: totalGamesPlayed, 
                     skins: availableSkins,
                     trails: availableTrails,
                     achievements: savedAchievements,
@@ -566,21 +565,22 @@
         }
 
         function triggerFlash(color) { flashColor = color; flashTimer = 10; }
-        
-        // --- UPDATE STATS ---
         function updateMenuStats() { 
             if(document.getElementById('menuHighScore')) { 
                 document.getElementById('menuHighScore').innerText = highScore; 
                 document.getElementById('menuStars').innerText = collectedStars; 
-                document.getElementById('menuGamesPlayed').innerText = totalGamesPlayed; // NEW
+                document.getElementById('menuGamesPlayed').innerText = totalGamesPlayed; 
             } 
         }
-        
         function showCheatFeedback(text) { let el = document.getElementById('cheat-feedback'); el.innerText = text; el.style.display = 'block'; setTimeout(() => { el.style.display = 'none'; }, 2000); }
         function unlockAchievement(id) { let ach = ALL_ACHIEVEMENTS.find(a => a.id === id); if (ach && !ach.unlocked) { ach.unlocked = true; savedAchievements.push(id); localStorage.setItem('flappyAchievements', JSON.stringify(savedAchievements)); } }
         
         function startSecretEnding() {
-            unlockAchievement('bite_98'); document.getElementById('pause-btn').style.display = 'none'; document.getElementById('dash-btn').style.display = 'none'; document.getElementById('bomb-btn').style.display = 'none';
+            unlockAchievement('bite_98'); 
+            document.getElementById('pause-btn').style.display = 'none'; 
+            document.getElementById('dash-btn').style.display = 'none'; 
+            document.getElementById('bomb-btn').style.display = 'none'; // *** FIXED: Ensure hidden ***
+            
             game_mode = 'secret_sequence'; secretState = 0; secretTimer = 200; 
             bgMusic.pause(); bgMusic.currentTime = 0; voidMusic.pause(); voidMusic.currentTime = 0; breathingSound.pause(); breathingSound.currentTime = 0;
         }
@@ -642,7 +642,19 @@
                 if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
                 else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } return;
             }
-            if (bossIntroState === 4) { let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); drawDialogueBox("YOU ARE MAKING A\nBIG MISTAKE"); bossIntroTimer--; if (bossIntroTimer <= 0) { unlockAchievement('true_end'); collectedStars += 500; localStorage.setItem('flappyStars', collectedStars); game_mode = 'true_end_sequence'; endSequenceStep = -1; endSequenceTimer = 200; endSequenceAlpha = 0; document.getElementById('dash-btn').style.display = 'none'; } return; }
+            if (bossIntroState === 4) { 
+                let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); 
+                drawDialogueBox("YOU ARE MAKING A\nBIG MISTAKE"); 
+                bossIntroTimer--; 
+                if (bossIntroTimer <= 0) { 
+                    unlockAchievement('true_end'); 
+                    collectedStars += 500; localStorage.setItem('flappyStars', collectedStars); 
+                    game_mode = 'true_end_sequence'; endSequenceStep = -1; endSequenceTimer = 200; endSequenceAlpha = 0; 
+                    document.getElementById('dash-btn').style.display = 'none'; 
+                    document.getElementById('bomb-btn').style.display = 'none'; // *** FIXED: Hide BOMB in True End ***
+                } 
+                return; 
+            }
             boss.y += boss.speedY * speedMultiplier; if (boss.y > 300 || boss.y < 50) boss.speedY *= -1; let fightImg = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (fightImg.complete) ctx.drawImage(fightImg, boss.x, boss.y, boss.width, boss.height);
             if (!isBoss2) { if (Math.random() < 0.06) spawnChocolate(); boss.stamina -= 0.1; if (boss.stamina <= 0) { unlockAchievement('monster'); triggerFlash("lime"); collectedStars += 100; localStorage.setItem('flappyStars', collectedStars); showCheatFeedback("BOSS DEFEATED! +100 STARS"); currentLives += 2; showCheatFeedback("BOSS DEFEATED! +2 LIVES"); victoryTimer = 100; game_mode = 'running'; currentScore = 51; boss.x = CANVAS_WIDTH + 500; chocolates = []; pipe_spawn_timer = 0; bossIntroState = 0; boss.movingIn = true; boss.stamina = 100; } } 
             else { if (Math.random() < 0.05) { let container = document.getElementById('game-container'); let r = Math.random(); if (r < 0.33) container.className = "upside-down"; else if (r < 0.66) container.className = "shake"; else container.className = ""; } if (errorSignCooldown > 0) errorSignCooldown--; if (errorSignCooldown <= 0 && Math.random() < 0.04 && errorSigns.length < 3) { spawnErrorSign(); errorSignCooldown = 25; } if (deleteBtnTimer > 0) { deleteBtnTimer -= (1000/FPS); if (deleteBtnTimer <= 0) document.getElementById('delete-boss-btn').style.display = 'none'; } else { deleteBtnSpawnTimer += (1000/FPS); if (deleteBtnSpawnTimer > 4000) { document.getElementById('delete-boss-btn').style.display = 'block'; deleteBtnTimer = 2500; deleteBtnSpawnTimer = 0; } } }
@@ -730,6 +742,8 @@
         function deactivateShield(silent = false) { isShieldActive = false; if (shieldTimeoutID) { clearTimeout(shieldTimeoutID); shieldTimeoutID = null; } if (!silent) { shieldBreakSound.currentTime = 0; shieldBreakSound.play().catch(e => console.warn(e)); } let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; }; tempImg.src = SKINS[currentSkinKey].src; }
 
         function triggerGameOver(msg) {
+            if (game_mode === 'over') return; // *** FIXED: PREVENT DOUBLE COUNTING ***
+            
             if (currentScore === 69) { unlockAchievement('interesting'); } if (isBoss2) { unlockAchievement('error_death'); }
             if (currentScore > highScore) { highScore = currentScore; localStorage.setItem('flappyHighScore', highScore); }
             
