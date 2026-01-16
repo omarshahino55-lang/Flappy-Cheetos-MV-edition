@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.0 Loader & Fixes</title> 
+     <title>Flying Cheetos: v4.2 Global Chat Update</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +32,6 @@
          #loading-text { color: white; font-family: 'Press Start 2P', cursive; font-size: 12px; margin-top: 20px; text-transform: uppercase; animation: bossPulse 1s infinite; }
 
          /* --- BOSS EFFECTS --- */
-         /* These were missing in previous versions, preventing the flip */
          .upside-down { transform: rotate(180deg) !important; }
          .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
          @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
@@ -146,7 +145,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">LOADER + FIXES</div>
+             <div class="update-badge">GLOBAL CHAT UPDATE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos"> 
              
@@ -164,7 +163,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v18 Loading System</div>
+             <div class="version-text">v4.2 Global Chat Update</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="closeModal('achievementsModal')">X</button>
