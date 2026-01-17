@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.6 Online Counter</title> 
+     <title>Flying Cheetos: v4.9 URL Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -65,6 +65,8 @@
          .secondary-btn { background-color: #3498db; font-size: 18px; box-shadow: 0 4px 0px #2980b9; }
          .preview-img { width: 60px; margin: 5px 0; animation: float 2s infinite ease-in-out; cursor: pointer; } 
          .version-text { position: absolute; bottom: 10px; right: 15px; color: rgba(255, 255, 255, 0.6); font-family: sans-serif; font-size: 14px; }
+         
+         #db-status { font-size: 10px; color: #aaa; margin-top: 5px; text-transform: uppercase; }
 
          /* MODALS */
          .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; background: rgba(0, 0, 0, 0.95); border: 4px solid white; border-radius: 15px; z-index: 20; padding: 20px; box-sizing: border-box; overflow-y: auto; font-family: 'Roboto', sans-serif; -webkit-overflow-scrolling: touch; }
@@ -110,8 +112,6 @@
              #bomb-btn { width: 60px; height: 45px; font-size: 10px; bottom: 10px; left: 10px; }
              #pause-btn { font-size: 10px; padding: 5px 10px; }
              #user-profile { transform: scale(0.8); transform-origin: top right; }
-             
-             /* ADJUSTED FOR 4 ITEMS */
              .menu-stats { gap: 8px; flex-wrap: wrap; justify-content: center; }
              .stat-box { font-size: 11px; min-width: 50px; }
              .stat-val { font-size: 15px; }
@@ -147,7 +147,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">ONLINE UPDATE</div>
+             <div class="update-badge">URL FIX</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -155,7 +155,7 @@
                  <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
                  <div class="stat-box">Stars<br><span class="stat-val" id="menuStars">0</span></div>
                  <div class="stat-box">Games<br><span class="stat-val" id="menuGamesPlayed">0</span></div>
-                 <div class="stat-box">Online<br><span class="stat-val" id="onlineCount" style="color: #00ff00;">1</span></div>
+                 <div class="stat-box">Online<br><span class="stat-val" id="onlineCount" style="color: #00ff00;">-</span><div id="db-status">Connecting...</div></div>
              </div>
 
              <div class="menu-buttons">
@@ -166,7 +166,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.6 Online Counter</div>
+             <div class="version-text">v4.9 URL Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -204,7 +204,6 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
      <script>
-        // --- LOADING LOGIC START ---
         const ASSETS_TO_LOAD = [
             'player.png', 'player_red.png', 'player_tough.png', 'player_rich.png', 'player_happy.png', 'player_yellow.png', 'player_black.png',
             'doordash_cheetos.png', 'boss.png', 'boss_2.png', 'chocolate.png',
@@ -220,7 +219,7 @@
                 let img = new Image();
                 img.src = src;
                 img.onload = () => { assetLoaded(); };
-                img.onerror = () => { assetLoaded(); }; // Proceed even if error to avoid stuck screen
+                img.onerror = () => { assetLoaded(); }; 
             });
         }
 
@@ -230,17 +229,17 @@
             document.getElementById('loading-bar-fill').style.width = percent + "%";
             document.getElementById('loading-text').innerText = "LOADING... " + percent + "%";
             if (assetsLoadedCount >= ASSETS_TO_LOAD.length) {
-                setTimeout(finishLoading, 500); // Small delay for effect
+                setTimeout(finishLoading, 500); 
             }
         }
 
         function finishLoading() {
             document.getElementById('loading-screen').style.display = 'none';
             document.getElementById('landing-page').style.display = 'flex';
-            reset_game(); // Initialize game state
+            reset_game(); 
         }
-        // --- LOADING LOGIC END ---
 
+        // --- FIREBASE CONFIG UPDATED ---
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
             authDomain: "flying-cheetos.firebaseapp.com",
@@ -249,8 +248,8 @@
             messagingSenderId: "605294625347",
             appId: "1:605294625347:web:283b3e8a87273210364af6",
             measurementId: "G-XWRRK54CJP",
-            // ADDED DATABASE URL FOR ONLINE COUNTER
-            databaseURL: "https://flying-cheetos.firebaseio.com"
+            // --- UPDATED URL HERE ---
+            databaseURL: "https://flyingcheetos-73e38-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
         let db = null;
@@ -264,26 +263,38 @@
                 firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
                 db = firebase.firestore();
-                rtdb = firebase.database(); // Init Realtime DB
+                rtdb = firebase.database(); 
                 console.log("Firebase initialized");
                 
-                // --- ONLINE PRESENCE LOGIC START ---
+                // --- ONLINE PRESENCE LOGIC ---
                 try {
                     const onlineRef = rtdb.ref('online_players');
                     const myCon = onlineRef.push();
                     myCon.onDisconnect().remove();
-                    myCon.set(true);
+                    
+                    // Attempt to write
+                    myCon.set(true).then(() => {
+                        document.getElementById('db-status').innerText = "CONNECTED";
+                        document.getElementById('db-status').style.color = "lime";
+                    }).catch((error) => {
+                        console.error("DB Write Error:", error);
+                        document.getElementById('db-status').innerText = "DB ERROR (CHECK CONSOLE)";
+                        document.getElementById('db-status').style.color = "red";
+                    });
 
                     onlineRef.on('value', (snapshot) => {
                         const count = snapshot.numChildren();
                         const el = document.getElementById('onlineCount');
                         if(el) el.innerText = count;
+                    }, (error) => {
+                        console.error("DB Read Error:", error);
+                        document.getElementById('db-status').innerText = "READ FAIL";
+                        document.getElementById('db-status').style.color = "red";
                     });
                 } catch(err) {
-                    console.warn("Online counter failed (DB might not be created):", err);
-                    document.getElementById('onlineCount').innerText = "-";
+                    console.warn("Online counter failed:", err);
+                    document.getElementById('db-status').innerText = "CONFIG ERROR";
                 }
-                // --- ONLINE PRESENCE LOGIC END ---
 
                 auth.onAuthStateChanged((user) => {
                     if (user) {
@@ -448,7 +459,6 @@
         const breathingSound = new Audio('breathing.mp3');
         const shieldBreakSound = new Audio('shield_breaking.mp3');
         const damageSound = new Audio('damage.mp3'); 
-        // --- NEW SOUNDS ---
         const explosionSound = new Audio('explosion.mp3');
         const noseSound = new Audio('nose.mp3');
         const buttonSound = new Audio('button.mp3');
@@ -471,9 +481,8 @@
         const GLITCH_TEXTS = ["thats not the reality", "404", "not found", "wake up", "null", "error"];
         let currentBGIndex = 0; let transitionText = ""; let transitionTimer = 0; let flashColor = null; let flashTimer = 0; let levelReached = 1; 
         
-        // --- PORTAL RARITY CHANGE ---
         let portals = []; 
-        const PORTAL_CHANCE = 0.02; // Reduced from 0.10 to 0.02
+        const PORTAL_CHANCE = 0.02; 
         let hasPortalSpawnedInThisArea = false;
         
         let cheatBuffer = ""; let redeemedCodes = [];
@@ -489,7 +498,6 @@
 
         var time_game_last_running; var bottom_bar_offset = 0; var pipes = []; var pipe_spawn_timer = 0; let currentScore = 0; 
         
-        // --- NEW STAT ---
         let totalGamesPlayed = 0;
         try { totalGamesPlayed = parseInt(localStorage.getItem('flappyGamesPlayed')) || 0; } catch(e) {}
 
@@ -639,9 +647,7 @@
         }
 
         window.togglePause = function() {
-            // NEW: PLAY BUTTON SOUND
             playClickSound();
-            
             if (game_mode !== 'running' && game_mode !== 'boss') return;
             isPaused = !isPaused; let btn = document.getElementById('pause-btn');
             if (isPaused) { btn.innerText = "►"; bgMusic.pause(); voidMusic.pause(); breathingSound.pause(); ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; ctx.fillRect(0, 0, myCanvas.width, myCanvas.height); ctx.font = "40px 'Press Start 2P', sans-serif"; ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.fillText("PAUSED", myCanvas.width/2, myCanvas.height/2); } 
@@ -710,13 +716,11 @@
         }
         window.openShopFromMenu = function() { document.getElementById('landing-page').style.display = 'none'; game_mode = 'shop_from_menu'; }
 
-        // --- EASTER EGG SOUND FUNCTION ---
         window.playNoseSound = function() {
             noseSound.currentTime = 0;
             noseSound.play().catch(e => console.warn(e));
         }
 
-        // --- NEW: PLAY CLICK SOUND FOR BUTTONS ---
         window.playClickSound = function() {
             buttonSound.currentTime = 0;
             buttonSound.play().catch(e => console.warn(e));
@@ -753,7 +757,6 @@
         function updateBoss() {
             if (boss.movingIn) { boss.x -= 2 * speedMultiplier; if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false; let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); return; }
             if (bossIntroState < 4) {
-                // HIDE BUTTONS DURING DIALOGUE
                 document.getElementById('dash-btn').style.display = 'none';
                 document.getElementById('bomb-btn').style.display = 'none';
 
@@ -762,7 +765,6 @@
                 if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
                 else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
                 
-                // RESTORE BUTTONS IF FIGHT STARTS (State 5)
                 if (bossIntroState === 5) {
                     if ((currentSkinKey === 'doordash' || currentSkinKey === 'black') && dashCharges > 0) document.getElementById('dash-btn').style.display = 'flex';
                     if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) document.getElementById('bomb-btn').style.display = 'flex';
@@ -770,7 +772,6 @@
                 return;
             }
             if (bossIntroState === 4) { 
-                // HIDE BUTTONS DURING BOSS 2 DIALOGUE
                 document.getElementById('dash-btn').style.display = 'none';
                 document.getElementById('bomb-btn').style.display = 'none';
 
@@ -789,11 +790,10 @@
             boss.y += boss.speedY * speedMultiplier; if (boss.y > 300 || boss.y < 50) boss.speedY *= -1; let fightImg = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (fightImg.complete) ctx.drawImage(fightImg, boss.x, boss.y, boss.width, boss.height);
             if (!isBoss2) { if (Math.random() < 0.06) spawnChocolate(); boss.stamina -= 0.1; if (boss.stamina <= 0) { unlockAchievement('monster'); triggerFlash("lime"); collectedStars += 100; localStorage.setItem('flappyStars', collectedStars); showCheatFeedback("BOSS DEFEATED! +100 STARS"); currentLives += 2; showCheatFeedback("BOSS DEFEATED! +2 LIVES"); victoryTimer = 100; game_mode = 'running'; currentScore = 51; boss.x = CANVAS_WIDTH + 500; chocolates = []; pipe_spawn_timer = 0; bossIntroState = 0; boss.movingIn = true; boss.stamina = 100; } } 
             else { 
-                // --- BOSS 2 EFFECTS ---
                 if (Math.random() < 0.05) { 
                     let container = document.getElementById('game-container'); 
                     let r = Math.random(); 
-                    if (r < 0.33) container.className = "upside-down"; // Will work now!
+                    if (r < 0.33) container.className = "upside-down"; 
                     else if (r < 0.66) container.className = "shake"; 
                     else container.className = ""; 
                 } 
@@ -809,7 +809,6 @@
                 const skin = SKINS[key]; 
                 if (availableSkins.includes(key)) { 
                     if (!skin.current) { 
-                        // EQUIPPING (No cost)
                         for (let k in SKINS) { SKINS[k].current = false; } 
                         skin.current = true; 
                         let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; }; tempImg.src = skin.src; 
@@ -820,13 +819,9 @@
                         if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0; 
                     } 
                 } else if (collectedStars >= skin.cost) { 
-                    // BUYING (Cost)
                     collectedStars -= skin.cost; availableSkins.push(key); 
-                    
-                    // NEW: Play Buy Sound
                     buySound.currentTime = 0;
                     buySound.play().catch(e => console.warn(e));
-
                     localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappySkins', JSON.stringify(availableSkins)); 
                     updateMenuStats(); 
                     saveUserData(); 
@@ -838,13 +833,9 @@
                 if (availableTrails.includes(key)) { 
                     if (!trail.current) { for (let k in TRAILS) { TRAILS[k].current = false; } trail.current = true; currentTrailKey = key; localStorage.setItem('currentTrail', key); } 
                 } else if (collectedStars >= trail.cost) { 
-                    // BUYING (Cost)
                     collectedStars -= trail.cost; availableTrails.push(key); 
-                    
-                    // NEW: Play Buy Sound
                     buySound.currentTime = 0;
                     buySound.play().catch(e => console.warn(e));
-
                     localStorage.setItem('flappyStars', collectedStars); localStorage.setItem('flappyTrails', JSON.stringify(availableTrails)); 
                     updateMenuStats(); 
                     saveUserData(); 
@@ -861,7 +852,6 @@
         function useWallDestruction() {
             if (!(currentSkinKey === 'yellow' || currentSkinKey === 'black') || wallDestroyCharges <= 0) return false; 
             let destroyedSets = 0; for (let i = 0; i < pipes.length; i += 2) { if (destroyedSets >= WALLS_TO_DESTROY) break; if (pipes[i].x > bird.x + bird.MyImg.width && pipes[i].visible) { pipes[i].visible = false; if (pipes[i+1]) pipes[i+1].visible = false; destroyedSets++; } }
-            // --- UPDATED BOMB SOUND ---
             if (destroyedSets > 0) { 
                 wallDestroyCharges--; 
                 explosionSound.currentTime = 0; 
@@ -1129,7 +1119,6 @@
         window.onload = function() {
             myCanvas = document.getElementById("myCanvas"); if (!myCanvas) { console.error("Canvas not found!"); return; } ctx = myCanvas.getContext('2d'); myCanvas.width = CANVAS_WIDTH; 
             updateMenuStats(); gameInterval = setInterval(Do_a_Frame, 1000 / FPS); 
-            // Trigger Loading instead of immediate reset
             preloadAssets(); 
         };
      </script> 
