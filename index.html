@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.9 URL Fix</title> 
+     <title>Flying Cheetos: v4.10 Final Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -166,7 +166,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.9 URL Fix</div>
+             <div class="version-text">v4.10 Final Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -248,7 +248,7 @@
             messagingSenderId: "605294625347",
             appId: "1:605294625347:web:283b3e8a87273210364af6",
             measurementId: "G-XWRRK54CJP",
-            // --- UPDATED URL HERE ---
+            // --- CLEANED URL HERE (Removed /:null) ---
             databaseURL: "https://flyingcheetos-73e38-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
@@ -278,9 +278,22 @@
                         document.getElementById('db-status').style.color = "lime";
                     }).catch((error) => {
                         console.error("DB Write Error:", error);
-                        document.getElementById('db-status').innerText = "DB ERROR (CHECK CONSOLE)";
+                        if(error.code === 'PERMISSION_DENIED') {
+                            document.getElementById('db-status').innerText = "CHECK RULES";
+                        } else {
+                            document.getElementById('db-status').innerText = "DB ERROR";
+                        }
                         document.getElementById('db-status').style.color = "red";
                     });
+
+                    // Timeout detection
+                    setTimeout(() => {
+                        const status = document.getElementById('db-status');
+                        if (status.innerText === "Connecting...") {
+                            status.innerText = "CHECK RULES";
+                            status.style.color = "orange";
+                        }
+                    }, 5000);
 
                     onlineRef.on('value', (snapshot) => {
                         const count = snapshot.numChildren();
