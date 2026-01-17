@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.5 Sound Fixes</title> 
+     <title>Flying Cheetos: v4.6 Online Counter</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -110,9 +110,11 @@
              #bomb-btn { width: 60px; height: 45px; font-size: 10px; bottom: 10px; left: 10px; }
              #pause-btn { font-size: 10px; padding: 5px 10px; }
              #user-profile { transform: scale(0.8); transform-origin: top right; }
-             .menu-stats { gap: 10px; }
-             .stat-box { font-size: 12px; }
-             .stat-val { font-size: 16px; }
+             
+             /* ADJUSTED FOR 4 ITEMS */
+             .menu-stats { gap: 8px; flex-wrap: wrap; justify-content: center; }
+             .stat-box { font-size: 11px; min-width: 50px; }
+             .stat-val { font-size: 15px; }
          }
      </style> 
  </head> 
@@ -145,7 +147,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">SOUND UPDATE</div>
+             <div class="update-badge">ONLINE UPDATE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -153,6 +155,7 @@
                  <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
                  <div class="stat-box">Stars<br><span class="stat-val" id="menuStars">0</span></div>
                  <div class="stat-box">Games<br><span class="stat-val" id="menuGamesPlayed">0</span></div>
+                 <div class="stat-box">Online<br><span class="stat-val" id="onlineCount" style="color: #00ff00;">1</span></div>
              </div>
 
              <div class="menu-buttons">
@@ -163,7 +166,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.5 Sound Fixes</div>
+             <div class="version-text">v4.6 Online Counter</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -198,6 +201,7 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
      <script>
         // --- LOADING LOGIC START ---
@@ -244,21 +248,43 @@
             storageBucket: "flying-cheetos.firebasestorage.app",
             messagingSenderId: "605294625347",
             appId: "1:605294625347:web:283b3e8a87273210364af6",
-            measurementId: "G-XWRRK54CJP"
+            measurementId: "G-XWRRK54CJP",
+            // ADDED DATABASE URL FOR ONLINE COUNTER
+            databaseURL: "https://flying-cheetos.firebaseio.com"
         };
 
         let db = null;
         let auth = null;
         let currentUser = null;
         let unsubscribeChat = null;
+        let rtdb = null;
 
         try {
             if (firebaseConfig.apiKey) {
                 firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
                 db = firebase.firestore();
+                rtdb = firebase.database(); // Init Realtime DB
                 console.log("Firebase initialized");
                 
+                // --- ONLINE PRESENCE LOGIC START ---
+                try {
+                    const onlineRef = rtdb.ref('online_players');
+                    const myCon = onlineRef.push();
+                    myCon.onDisconnect().remove();
+                    myCon.set(true);
+
+                    onlineRef.on('value', (snapshot) => {
+                        const count = snapshot.numChildren();
+                        const el = document.getElementById('onlineCount');
+                        if(el) el.innerText = count;
+                    });
+                } catch(err) {
+                    console.warn("Online counter failed (DB might not be created):", err);
+                    document.getElementById('onlineCount').innerText = "-";
+                }
+                // --- ONLINE PRESENCE LOGIC END ---
+
                 auth.onAuthStateChanged((user) => {
                     if (user) {
                         currentUser = user;
