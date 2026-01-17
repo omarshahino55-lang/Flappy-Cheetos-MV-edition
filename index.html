@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.10 Final Fix</title> 
+     <title>Flying Cheetos: v4.11 Debugger</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -30,6 +30,14 @@
          #loading-bar-border { width: 60%; height: 20px; border: 3px solid #fff; padding: 3px; border-radius: 10px; box-shadow: 0 0 10px #f7941d; }
          #loading-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #f7941d, #ff4500); border-radius: 5px; transition: width 0.1s; }
          #loading-text { color: white; font-family: 'Press Start 2P', cursive; font-size: 12px; margin-top: 20px; text-transform: uppercase; animation: bossPulse 1s infinite; }
+
+         /* --- DEBUG LOG (NEW) --- */
+         #debug-console {
+             position: absolute; top: 5px; left: 5px; width: 300px; height: 100px; 
+             background: rgba(0,0,0,0.8); border: 1px solid red; color: red; 
+             font-family: monospace; font-size: 10px; overflow-y: scroll; 
+             z-index: 2000; display: block; padding: 5px; pointer-events: none;
+         }
 
          /* --- BOSS EFFECTS --- */
          .upside-down { transform: rotate(180deg) !important; }
@@ -128,6 +136,8 @@
              <div id="loading-text">Loading Assets...</div>
          </div>
 
+         <div id="debug-console">DEBUG MODE ACTIVE<br>Initializing...</div>
+
          <div id="user-profile">
              <img id="user-avatar" class="user-avatar" src="" alt="User">
              <button id="login-btn" onclick="signInWithGoogle()">Login</button>
@@ -147,7 +157,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">URL FIX</div>
+             <div class="update-badge">DEBUG MODE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -166,7 +176,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.10 Final Fix</div>
+             <div class="version-text">v4.11 Debugger</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -204,6 +214,16 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
      <script>
+        // DEBUG HELPER
+        function logDebug(msg) {
+            const c = document.getElementById('debug-console');
+            if(c) {
+                c.innerHTML += "> " + msg + "<br>";
+                c.scrollTop = c.scrollHeight;
+            }
+            console.log("[DEBUG] " + msg);
+        }
+
         const ASSETS_TO_LOAD = [
             'player.png', 'player_red.png', 'player_tough.png', 'player_rich.png', 'player_happy.png', 'player_yellow.png', 'player_black.png',
             'doordash_cheetos.png', 'boss.png', 'boss_2.png', 'chocolate.png',
@@ -239,7 +259,6 @@
             reset_game(); 
         }
 
-        // --- FIREBASE CONFIG UPDATED ---
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
             authDomain: "flying-cheetos.firebaseapp.com",
@@ -248,7 +267,6 @@
             messagingSenderId: "605294625347",
             appId: "1:605294625347:web:283b3e8a87273210364af6",
             measurementId: "G-XWRRK54CJP",
-            // --- CLEANED URL HERE (Removed /:null) ---
             databaseURL: "https://flyingcheetos-73e38-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
@@ -260,52 +278,47 @@
 
         try {
             if (firebaseConfig.apiKey) {
+                logDebug("Init Firebase...");
                 firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
                 db = firebase.firestore();
                 rtdb = firebase.database(); 
-                console.log("Firebase initialized");
+                logDebug("Firebase Init Done");
                 
                 // --- ONLINE PRESENCE LOGIC ---
                 try {
+                    logDebug("Connecting to RTDB...");
                     const onlineRef = rtdb.ref('online_players');
-                    const myCon = onlineRef.push();
-                    myCon.onDisconnect().remove();
                     
-                    // Attempt to write
-                    myCon.set(true).then(() => {
-                        document.getElementById('db-status').innerText = "CONNECTED";
-                        document.getElementById('db-status').style.color = "lime";
-                    }).catch((error) => {
-                        console.error("DB Write Error:", error);
-                        if(error.code === 'PERMISSION_DENIED') {
-                            document.getElementById('db-status').innerText = "CHECK RULES";
-                        } else {
-                            document.getElementById('db-status').innerText = "DB ERROR";
-                        }
-                        document.getElementById('db-status').style.color = "red";
-                    });
-
-                    // Timeout detection
-                    setTimeout(() => {
-                        const status = document.getElementById('db-status');
-                        if (status.innerText === "Connecting...") {
-                            status.innerText = "CHECK RULES";
-                            status.style.color = "orange";
-                        }
-                    }, 5000);
-
+                    // JUST TRY TO READ FIRST
                     onlineRef.on('value', (snapshot) => {
                         const count = snapshot.numChildren();
                         const el = document.getElementById('onlineCount');
                         if(el) el.innerText = count;
+                        document.getElementById('db-status').innerText = "LIVE";
+                        document.getElementById('db-status').style.color = "lime";
+                        logDebug("Read Success. Count: " + count);
                     }, (error) => {
-                        console.error("DB Read Error:", error);
-                        document.getElementById('db-status').innerText = "READ FAIL";
+                        logDebug("Read ERROR: " + error.code);
+                        if(error.code === 'PERMISSION_DENIED') {
+                            document.getElementById('db-status').innerText = "CHECK RULES";
+                        } else {
+                            document.getElementById('db-status').innerText = "READ FAIL";
+                        }
                         document.getElementById('db-status').style.color = "red";
                     });
+
+                    // THEN TRY TO WRITE
+                    const myCon = onlineRef.push();
+                    myCon.onDisconnect().remove();
+                    myCon.set(true).then(() => {
+                        logDebug("Write Success.");
+                    }).catch((error) => {
+                        logDebug("Write ERROR: " + error.code);
+                    });
+
                 } catch(err) {
-                    console.warn("Online counter failed:", err);
+                    logDebug("RTDB Exception: " + err.message);
                     document.getElementById('db-status').innerText = "CONFIG ERROR";
                 }
 
@@ -776,7 +789,7 @@
                 let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
                 if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
                 if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
-                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
+                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
                 
                 if (bossIntroState === 5) {
                     if ((currentSkinKey === 'doordash' || currentSkinKey === 'black') && dashCharges > 0) document.getElementById('dash-btn').style.display = 'flex';
