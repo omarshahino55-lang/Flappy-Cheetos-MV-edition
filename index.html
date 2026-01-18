@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.19 Online Trophies</title> 
+     <title>Flying Cheetos: v4.20 Instant Start</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,12 +25,6 @@
 
          canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: crisp-edges; image-rendering: pixelated; }
 
-         /* --- LOADING SCREEN --- */
-         #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-         #loading-bar-border { width: 60%; height: 20px; border: 3px solid #fff; padding: 3px; border-radius: 10px; box-shadow: 0 0 10px #f7941d; }
-         #loading-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #f7941d, #ff4500); border-radius: 5px; transition: width 0.1s; }
-         #loading-text { color: white; font-family: 'Press Start 2P', cursive; font-size: 12px; margin-top: 20px; text-transform: uppercase; animation: bossPulse 1s infinite; }
-
          /* --- BOSS EFFECTS --- */
          .upside-down { transform: rotate(180deg) !important; }
          .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
@@ -51,7 +45,7 @@
          #logout-btn { background: #333; color: white; border: 1px solid white; padding: 5px 10px; border-radius: 5px; font-family: sans-serif; cursor: pointer; display: none; font-size: 10px;}
 
          /* MAIN MENU */
-         #landing-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('http://s2js.com/img/etc/flappyback.png'); background-size: cover; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; } 
+         #landing-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('http://s2js.com/img/etc/flappyback.png'); background-size: cover; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; } 
          .update-badge { background: linear-gradient(45deg, #3498db, #2980b9); color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 20px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 3px; animation: bossPulse 1s infinite; border: 2px solid #fff; font-family: 'Arial Black', sans-serif; }
          #landing-page h1 { color: #FF4500; font-size: 60px; text-shadow: 4px 4px 0px #fff; margin: 0; } 
 
@@ -145,13 +139,6 @@
  <body> 
 
      <div id="game-container"> 
-         <div id="loading-screen">
-             <div id="loading-bar-border">
-                 <div id="loading-bar-fill"></div>
-             </div>
-             <div id="loading-text">Loading Assets...</div>
-         </div>
-
          <div id="user-profile">
              <img id="user-avatar" class="user-avatar" src="" alt="User">
              <button id="login-btn" onclick="signInWithGoogle()">Login</button>
@@ -218,7 +205,7 @@
          </div>
 
          <div id="landing-page"> 
-             <div class="update-badge">v4.19 TROPHIES</div>
+             <div class="update-badge">v4.20 INSTANT LOAD</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -236,7 +223,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.19 Online Trophies</div>
+             <div class="version-text">v4.20 Instant Load</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -274,41 +261,8 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
      <script>
-        const ASSETS_TO_LOAD = [
-            'player.png', 'player_red.png', 'player_tough.png', 'player_rich.png', 'player_happy.png', 'player_yellow.png', 'player_black.png',
-            'doordash_cheetos.png', 'boss.png', 'boss_2.png', 'chocolate.png',
-            'shield.png', 'player_shielded.png', 'potion.png', 'slow_potion.png', 'star.png',
-            'portal.png', 'red.png', 'wall.png',
-            'bg1.png', 'bg2.png', 'bg3.png', 'bg4.png', 'bg5.png'
-        ];
-        let assetsLoadedCount = 0;
+        // ASSETS_TO_LOAD REMOVED - Using direct execution
         
-        function preloadAssets() {
-            if(ASSETS_TO_LOAD.length === 0) { finishLoading(); return; }
-            ASSETS_TO_LOAD.forEach(src => {
-                let img = new Image();
-                img.src = src;
-                img.onload = () => { assetLoaded(); };
-                img.onerror = () => { assetLoaded(); }; 
-            });
-        }
-
-        function assetLoaded() {
-            assetsLoadedCount++;
-            let percent = Math.floor((assetsLoadedCount / ASSETS_TO_LOAD.length) * 100);
-            document.getElementById('loading-bar-fill').style.width = percent + "%";
-            document.getElementById('loading-text').innerText = "LOADING... " + percent + "%";
-            if (assetsLoadedCount >= ASSETS_TO_LOAD.length) {
-                setTimeout(finishLoading, 500); 
-            }
-        }
-
-        function finishLoading() {
-            document.getElementById('loading-screen').style.display = 'none';
-            document.getElementById('landing-page').style.display = 'flex';
-            reset_game(); 
-        }
-
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
             authDomain: "flying-cheetos.firebaseapp.com",
@@ -545,7 +499,7 @@
         let pipe_speed = -2; let currentSpawnInterval = 2500; let speedMultiplier = 1; 
 
         var time_game_last_running; var bottom_bar_offset = 0; var pipes = []; var pipe_spawn_timer = 0; let currentScore = 0; 
-        let lastPipeY = 0; // For smoothing pipes in online mode
+        let lastPipeY = 250; // For smoothing pipes in online mode
 
         let totalGamesPlayed = 0;
         try { totalGamesPlayed = parseInt(localStorage.getItem('flappyGamesPlayed')) || 0; } catch(e) {}
@@ -826,11 +780,14 @@
             mainMenuMusic.currentTime = 0;
             
             // Show fake loading screen
-            document.getElementById('loading-screen').style.display = 'flex';
-            document.getElementById('loading-text').innerText = "SEARCHING FOR RANKED MATCH...";
+            document.getElementById('landing-page').style.display = 'none'; // Ensure main menu gone
+            let loadScr = document.createElement('div');
+            loadScr.id = "temp-online-loader";
+            loadScr.style.position = "absolute"; loadScr.style.top=0; loadScr.style.left=0; loadScr.style.width="100%"; loadScr.style.height="100%"; loadScr.style.background="black"; loadScr.style.color="white"; loadScr.style.display="flex"; loadScr.style.justifyContent="center"; loadScr.style.alignItems="center"; loadScr.style.fontFamily="'Press Start 2P'"; loadScr.innerHTML = "SEARCHING FOR MATCH...";
+            document.getElementById('game-container').appendChild(loadScr);
             
             setTimeout(() => {
-                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('temp-online-loader').remove();
                 reset_game();
                 game_mode = 'online_match';
                 online_score_player = 0; // Rounds
@@ -1402,7 +1359,9 @@
         window.onload = function() {
             myCanvas = document.getElementById("myCanvas"); if (!myCanvas) { console.error("Canvas not found!"); return; } ctx = myCanvas.getContext('2d'); myCanvas.width = CANVAS_WIDTH; 
             updateMenuStats(); gameInterval = setInterval(Do_a_Frame, 1000 / FPS); 
-            preloadAssets(); 
+            // PRELOADER REMOVED - START IMMEDIATELY
+            document.getElementById('landing-page').style.display = 'flex';
+            reset_game();
         };
      </script> 
  </body> 
