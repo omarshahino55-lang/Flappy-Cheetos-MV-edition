@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.12 Mobile Fix</title> 
+     <title>Flying Cheetos: v4.13 Logic Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -147,7 +147,7 @@
          </video>
 
          <div id="landing-page"> 
-             <div class="update-badge">v4.12 CLEAN</div>
+             <div class="update-badge">v4.13 FIXES</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -166,7 +166,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.12 Mobile Fix</div>
+             <div class="version-text">v4.13 Logic Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -255,6 +255,7 @@
         let currentUser = null;
         let unsubscribeChat = null;
         let rtdb = null;
+        let myOnlineRef = null;
 
         try {
             if (firebaseConfig.apiKey) {
@@ -264,18 +265,24 @@
                 rtdb = firebase.database(); 
                 console.log("Firebase initialized");
                 
-                // --- ONLINE PRESENCE LOGIC (IMPROVED) ---
+                // --- ONLINE PRESENCE LOGIC (FIXED) ---
                 try {
                     const onlineRef = rtdb.ref('online_players');
                     
-                    // Listen to .info/connected to only write when truly connected
+                    // Listen to .info/connected
                     const connectedRef = rtdb.ref(".info/connected");
                     connectedRef.on("value", (snap) => {
                         if (snap.val() === true) {
-                            const con = onlineRef.push();
-                            con.onDisconnect().remove();
-                            con.set(true);
+                            if(myOnlineRef) myOnlineRef.remove(); // Remove old if exists
+                            myOnlineRef = onlineRef.push();
+                            myOnlineRef.onDisconnect().remove();
+                            myOnlineRef.set(true);
                         }
+                    });
+
+                    // Force remove on window close to prevent ghosts
+                    window.addEventListener("beforeunload", () => {
+                        if(myOnlineRef) myOnlineRef.remove();
                     });
 
                     // Update count
@@ -763,7 +770,7 @@
                 let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
                 if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
                 if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
-                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
+                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
                 
                 if (bossIntroState === 5) {
                     if ((currentSkinKey === 'doordash' || currentSkinKey === 'black') && dashCharges > 0) document.getElementById('dash-btn').style.display = 'flex';
@@ -867,7 +874,11 @@
             if (currentSkinKey === 'happy' || currentSkinKey === 'black') { if (currentBGIndex === 4) { final_accel = VOID_ACCEL; final_max = VOID_MAX_FALL; } else { final_accel = SUPER_ACCELERATION; final_max = SUPER_MAX_FALL_SPEED; } }
             if (bird.velocity_y < final_max) { bird.velocity_y += final_accel; }
             if (bird.y > myCanvas.height - bird.MyImg.height || bird.y < 0 - bird.MyImg.height) { 
-                if (currentScore >= 98 && currentScore <= 102 && bird.y > 0) { startSecretEnding(); return; }
+                // --- SECRET ENDING FIX (v4.13) ---
+                // You must be near the secret sign to trigger it. Just falling dies.
+                if (secretSign && bird.y > 0 && bird.x > secretSign.x - 50 && bird.x < secretSign.x + 250) { 
+                    startSecretEnding(); return; 
+                }
                 bird.velocity_y = 0; triggerGameOver("Game Over"); 
             }
         }
