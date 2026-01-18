@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.18 Battle Mode</title> 
+     <title>Flying Cheetos: v4.19 Online Trophies</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -79,8 +79,9 @@
          .mode-desc { color: #aaa; font-family: 'Roboto', sans-serif; font-size: 14px; }
          
          /* ONLINE UI */
-         #online-ui { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 300px; background: rgba(0,0,0,0.6); border: 2px solid white; border-radius: 10px; padding: 10px; color: white; font-family: 'Press Start 2P'; font-size: 12px; z-index: 80; text-align: center; }
+         #online-ui { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 340px; background: rgba(0,0,0,0.6); border: 2px solid white; border-radius: 10px; padding: 10px; color: white; font-family: 'Press Start 2P'; font-size: 12px; z-index: 80; text-align: center; }
          #online-round-text { color: yellow; margin-bottom: 5px; }
+         #online-score-board { display: flex; justify-content: space-between; padding: 0 10px; margin-top: 5px; }
 
          /* PAUSE MENU */
          #pause-menu { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 150; flex-direction: column; align-items: center; justify-content: center; }
@@ -176,9 +177,10 @@
                  <div class="mode-desc">The classic adventure. Defeat bosses, discover secrets, and reach the end.</div>
              </div>
 
-             <div class="mode-card" style="background:linear-gradient(#e74c3c, #c0392b);" onclick="startOnlineMode()">
+             <div class="mode-card" style="background:linear-gradient(#2980b9, #2c3e50);" onclick="startOnlineMode()">
                  <h3 style="color:white;">ONLINE (VS)</h3>
-                 <div class="mode-desc">Battle against another player! Best of 3 games wins.</div>
+                 <div class="mode-desc">Score Battle!<br>Ranked Matchmaking.<br>Best of 3 Rounds.</div>
+                 <div style="margin-top:10px; color:gold; font-weight:bold;">🏆 Trophies: <span id="modeTrophyDisplay">0</span></div>
              </div>
 
              <button class="enter-btn secondary-btn" style="margin-top:20px; width:100px; font-size:14px;" onclick="closeModeSelect()">BACK</button>
@@ -186,7 +188,11 @@
 
          <div id="online-ui">
              <div id="online-round-text">ROUND 1</div>
-             <div>YOU <span id="p-score" style="color:lime">0</span> - <span id="e-score" style="color:red">0</span> ENEMY</div>
+             <div id="online-score-board">
+                 <div style="text-align:left;">YOU<br><span id="p-score" style="color:lime; font-size:16px;">0</span></div>
+                 <div style="text-align:right;">OPPONENT<br><span id="e-score" style="color:red; font-size:16px;">0</span></div>
+             </div>
+             <div style="font-size:10px; color:#aaa; margin-top:5px;">Target: Beat Opponent Score</div>
          </div>
 
          <div id="pause-menu">
@@ -212,14 +218,14 @@
          </div>
 
          <div id="landing-page"> 
-             <div class="update-badge">v4.18 BATTLE MODE</div>
+             <div class="update-badge">v4.19 TROPHIES</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
              <div class="menu-stats">
                  <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
                  <div class="stat-box">Stars<br><span class="stat-val" id="menuStars">0</span></div>
-                 <div class="stat-box">Games<br><span class="stat-val" id="menuGamesPlayed">0</span></div>
+                 <div class="stat-box">Trophies<br><span class="stat-val" id="menuTrophies">0</span></div>
              </div>
 
              <div class="menu-buttons">
@@ -230,7 +236,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.18 Battle Mode</div>
+             <div class="version-text">v4.19 Online Trophies</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -361,9 +367,8 @@
                 if (doc.exists) {
                     const cloudData = doc.data();
                     if (cloudData.stars > collectedStars) collectedStars = cloudData.stars;
-                    if (cloudData.gamesPlayed && cloudData.gamesPlayed > totalGamesPlayed) {
-                        totalGamesPlayed = cloudData.gamesPlayed;
-                    }
+                    if (cloudData.gamesPlayed && cloudData.gamesPlayed > totalGamesPlayed) totalGamesPlayed = cloudData.gamesPlayed;
+                    if (cloudData.trophies && cloudData.trophies > onlineTrophies) onlineTrophies = cloudData.trophies;
 
                     const mergedSkins = new Set([...availableSkins, ...(cloudData.skins || [])]);
                     availableSkins = Array.from(mergedSkins);
@@ -375,6 +380,7 @@
 
                     localStorage.setItem('flappyStars', collectedStars);
                     localStorage.setItem('flappyGamesPlayed', totalGamesPlayed); 
+                    localStorage.setItem('flappyTrophies', onlineTrophies);
                     localStorage.setItem('flappySkins', JSON.stringify(availableSkins));
                     localStorage.setItem('flappyTrails', JSON.stringify(availableTrails));
                     localStorage.setItem('flappyAchievements', JSON.stringify(savedAchievements));
@@ -390,7 +396,8 @@
             try {
                 await db.collection('users').doc(currentUser.uid).set({
                     stars: collectedStars,
-                    gamesPlayed: totalGamesPlayed, 
+                    gamesPlayed: totalGamesPlayed,
+                    trophies: onlineTrophies,
                     skins: availableSkins,
                     trails: availableTrails,
                     achievements: savedAchievements,
@@ -538,7 +545,8 @@
         let pipe_speed = -2; let currentSpawnInterval = 2500; let speedMultiplier = 1; 
 
         var time_game_last_running; var bottom_bar_offset = 0; var pipes = []; var pipe_spawn_timer = 0; let currentScore = 0; 
-        
+        let lastPipeY = 0; // For smoothing pipes in online mode
+
         let totalGamesPlayed = 0;
         try { totalGamesPlayed = parseInt(localStorage.getItem('flappyGamesPlayed')) || 0; } catch(e) {}
 
@@ -557,10 +565,17 @@
         let collectedStars = 0; let stars = []; const STAR_WIDTH = 20; const STAR_HEIGHT = 20; const STAR_VALUE = 1; 
         
         // ONLINE VARIABLES
-        let online_score_player = 0;
-        let online_score_enemy = 0;
+        let onlineTrophies = 0;
+        try { onlineTrophies = parseInt(localStorage.getItem('flappyTrophies')) || 0; } catch(e) {}
+
+        let online_score_player = 0; // Wins
+        let online_score_enemy = 0; // Wins
         let online_round = 1;
-        let botBird = { x: 0, y: 0, velocity_y: 0, dead: false };
+        
+        // Simulation Opponent Variables
+        let enemyTargetScore = 0;
+        let enemyCurrentVisibleScore = 0;
+        let enemyHasCrashed = false;
 
         const SKINS = {
             'default': { src: 'player.png', cost: 0, current: true, name: 'Original Cheetos' }, 
@@ -751,6 +766,7 @@
             if(document.getElementById('menuHighScore')) { 
                 document.getElementById('menuHighScore').innerText = highScore; 
                 document.getElementById('menuStars').innerText = collectedStars; 
+                document.getElementById('menuTrophies').innerText = onlineTrophies; 
                 document.getElementById('menuGamesPlayed').innerText = totalGamesPlayed; 
             } 
         }
@@ -784,6 +800,7 @@
         window.openModeSelect = function() {
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('mode-select-modal').style.display = 'flex';
+            document.getElementById('modeTrophyDisplay').innerText = onlineTrophies;
         }
 
         window.closeModeSelect = function() {
@@ -810,25 +827,28 @@
             
             // Show fake loading screen
             document.getElementById('loading-screen').style.display = 'flex';
-            document.getElementById('loading-text').innerText = "SEARCHING FOR OPPONENT...";
+            document.getElementById('loading-text').innerText = "SEARCHING FOR RANKED MATCH...";
             
             setTimeout(() => {
                 document.getElementById('loading-screen').style.display = 'none';
                 reset_game();
                 game_mode = 'online_match';
-                online_score_player = 0;
-                online_score_enemy = 0;
+                online_score_player = 0; // Rounds
+                online_score_enemy = 0; // Rounds
                 online_round = 1;
-                botBird.dead = false;
-                botBird.y = myCanvas.height / 2;
-                botBird.velocity_y = 0;
+                
+                resetOnlineRound();
 
                 document.getElementById('online-ui').style.display = 'block';
                 updateOnlineUI();
 
                 document.getElementById('pause-btn').style.display = 'block';
+                // Activate abilities buttons if applicable
+                if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
+                if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
+
                 if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
-            }, 2000);
+            }, 2500);
         }
 
         function updateOnlineUI() {
@@ -841,12 +861,22 @@
             pipes = [];
             bird.y = myCanvas.height / 2;
             bird.velocity_y = 0;
-            botBird.y = myCanvas.height / 2;
-            botBird.velocity_y = 0;
-            botBird.dead = false;
+            currentScore = 0;
+            lastPipeY = 250;
             add_pipe(CANVAS_WIDTH, 100, 140);
             updateOnlineUI();
             flashTimer = 0;
+            
+            // Simulate Enemy Difficulty based on Trophies
+            // Base difficulty: 5-15. Trophies add roughly 1 point per 10 trophies.
+            let baseDiff = 5 + Math.floor(Math.random() * 10);
+            let skillBonus = Math.floor(onlineTrophies / 15);
+            enemyTargetScore = baseDiff + skillBonus;
+            // Variance
+            if (Math.random() < 0.2) enemyTargetScore += 20; // Tryhard opponent
+            
+            enemyCurrentVisibleScore = 0;
+            enemyHasCrashed = false;
         }
 
         function handleOnlineWin(winner) {
@@ -859,7 +889,6 @@
                 online_score_enemy++;
                 triggerFlash("red");
                 showCheatFeedback("ROUND LOST!");
-                if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));}
             }
             
             online_round++;
@@ -867,8 +896,17 @@
 
             if (online_score_player >= 2 || online_score_enemy >= 2) {
                 // MATCH OVER
+                let wonMatch = online_score_player > online_score_enemy;
+                let trophyChange = wonMatch ? 25 : -15;
+                if (!wonMatch && onlineTrophies < 15) trophyChange = -onlineTrophies; // Can't go below 0 easily
+
+                onlineTrophies += trophyChange;
+                localStorage.setItem('flappyTrophies', onlineTrophies);
+                saveUserData();
+
                 setTimeout(() => {
-                     triggerGameOver(online_score_player > online_score_enemy ? "YOU WON THE MATCH!" : "YOU LOST THE MATCH!");
+                     let msg = wonMatch ? `VICTORY! +${trophyChange} 🏆` : `DEFEAT... ${trophyChange} 🏆`;
+                     triggerGameOver(msg);
                      document.getElementById('online-ui').style.display = 'none';
                 }, 1500);
             } else {
@@ -997,8 +1035,8 @@
                         let tempImg = new Image(); tempImg.onload = function() { bird.MyImg = tempImg; }; tempImg.src = skin.src; 
                         currentSkinKey = key; localStorage.setItem('currentSkin', key); 
                         if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { wallDestroyCharges = MAX_DESTROY_CHARGES; } 
-                        if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { dashCharges = 5; if (game_mode === 'running' || game_mode === 'boss') { document.getElementById('dash-btn').style.display = 'flex'; } } else { document.getElementById('dash-btn').style.display = 'none'; } 
-                        if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; } else { document.getElementById('bomb-btn').style.display = 'none'; } 
+                        if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { dashCharges = 5; if (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match') { document.getElementById('dash-btn').style.display = 'flex'; } } else { document.getElementById('dash-btn').style.display = 'none'; } 
+                        if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { if (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match') { document.getElementById('bomb-btn').style.display = 'flex'; } } else { document.getElementById('bomb-btn').style.display = 'none'; } 
                         if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0; 
                     } 
                 } else if (collectedStars >= skin.cost) { 
@@ -1051,73 +1089,46 @@
                     startSecretEnding(); return; 
                 }
                 if (game_mode === 'online_match') {
-                     handleOnlineWin('enemy');
+                     // NEW WIN CONDITION:
+                     // If player crashes, we check if they beat the enemy score.
+                     // Since we don't know the TRUE enemy score until they crash, we use the Visible Simulated Score
+                     if (currentScore > enemyCurrentVisibleScore) {
+                         handleOnlineWin('player');
+                     } else {
+                         handleOnlineWin('enemy');
+                     }
                      return;
                 }
                 bird.velocity_y = 0; triggerGameOver("Game Over"); 
             }
         }
         
-        // ONLINE BOT LOGIC
-        function updateOnlineBot() {
-            if (botBird.dead) return;
-            
-            // 1. Move Bot
-            botBird.velocity_y += acceleration;
-            botBird.y += botBird.velocity_y;
-
-            // 2. Find closest pipe
-            let nextPipe = null;
-            for (let i = 0; i < pipes.length; i += 2) {
-                if (pipes[i].x + 50 > botBird.x) {
-                    nextPipe = pipes[i];
-                    break;
-                }
-            }
-
-            // 3. AI Logic: Jump if below gap
-            if (nextPipe) {
-                let targetY = nextPipe.y + 140; // Gap center (approx)
-                if (botBird.y > targetY && botBird.velocity_y > 0) {
-                     botBird.velocity_y = jump_amount;
-                }
-            } else if (botBird.y > myCanvas.height - 100) {
-                 botBird.velocity_y = jump_amount; // Don't hit floor
-            }
-
-            // 4. Collision Check (Bot)
-            // Small chance to die randomly to simulate human error
-            if (Math.random() < 0.005) { botBird.dead = true; handleOnlineWin('player'); return; }
-            
-            for (var i = 0; i < pipes.length; i++) {
-                if (!pipes[i].visible) continue;
-                // Simple box collision
-                let p = pipes[i];
-                if (botBird.x + 30 > p.x && botBird.x < p.x + 50 &&
-                    botBird.y + 30 > p.y && botBird.y < p.y + (p.MyImg.height || 400)) {
-                        botBird.dead = true;
-                        handleOnlineWin('player');
-                        return;
-                }
-            }
-            if (botBird.y > myCanvas.height) { botBird.dead = true; handleOnlineWin('player'); }
-        }
-
         function updateDifficulty() { let level = currentBGIndex; pipe_speed = -2 - level; currentSpawnInterval = 2500 - (level * 300); if (currentSpawnInterval < 1000) currentSpawnInterval = 1000; }
 
         function add_pipe(x_pos, top_of_gap, gap_width) {
             if (isBoss2 && game_mode === 'running') { let isTop = Math.random() < 0.5; let wall = new MySprite(); wall.isText = true; wall.text = "undefined"; wall.x = x_pos; wall.velocity_x = pipe_speed; if (isTop) wall.y = top_of_gap - 50; else wall.y = top_of_gap + gap_width + 50; if (currentBGIndex === 4) { wall.oscillate = true; wall.baseY = wall.y; wall.phase = Date.now(); } pipes.push(wall); return; }
             if (currentScore === 98 && !secretSign) { spawnSecretSign(); }
-            var top_pipe = new MySprite(); top_pipe.MyImg = pipe_piece; top_pipe.x = x_pos; top_pipe.y = top_of_gap - pipe_piece.height; top_pipe.velocity_x = pipe_speed;
-            var bottom_pipe = new MySprite(); bottom_pipe.MyImg = pipe_piece; bottom_pipe.flipV = true; bottom_pipe.x = x_pos; bottom_pipe.y = top_of_gap + gap_width; bottom_pipe.velocity_x = pipe_speed;
+            
+            // --- NEW SMOOTHING LOGIC ---
+            // Instead of pure random, we look at the last pipe's top gap
+            let minGapY = Math.max(50, lastPipeY - 150);
+            let maxGapY = Math.min(myCanvas.height - 300, lastPipeY + 150);
+            
+            // Randomly choose a new gap within the safe vertical range
+            let newGapY = Math.floor(Math.random() * (maxGapY - minGapY + 1)) + minGapY;
+            lastPipeY = newGapY; // Update for next time
+
+            var top_pipe = new MySprite(); top_pipe.MyImg = pipe_piece; top_pipe.x = x_pos; top_pipe.y = newGapY - pipe_piece.height; top_pipe.velocity_x = pipe_speed;
+            var bottom_pipe = new MySprite(); bottom_pipe.MyImg = pipe_piece; bottom_pipe.flipV = true; bottom_pipe.x = x_pos; bottom_pipe.y = newGapY + gap_width; bottom_pipe.velocity_x = pipe_speed;
+            
             let voidPhase = 0; if (currentBGIndex === 4) { voidPhase = Date.now(); top_pipe.oscillate = true; top_pipe.baseY = top_pipe.y; top_pipe.phase = voidPhase; bottom_pipe.oscillate = true; bottom_pipe.baseY = bottom_pipe.y; bottom_pipe.phase = voidPhase; }
             pipes.push(top_pipe); pipes.push(bottom_pipe);
-            if (!hasPortalSpawnedInThisArea && currentBGIndex !== 4 && Math.random() < PORTAL_CHANCE && !isBoss2) { top_pipe.visible = false; bottom_pipe.visible = false; let p = new MySprite(); p.MyImg = PORTAL_IMG; p.parentPipe = bottom_pipe; p.y = myCanvas.height / 2 - 50; portals.push(p); hasPortalSpawnedInThisArea = true; }
+            if (!hasPortalSpawnedInThisArea && currentBGIndex !== 4 && Math.random() < PORTAL_CHANCE && !isBoss2 && game_mode !== 'online_match') { top_pipe.visible = false; bottom_pipe.visible = false; let p = new MySprite(); p.MyImg = PORTAL_IMG; p.parentPipe = bottom_pipe; p.y = myCanvas.height / 2 - 50; portals.push(p); hasPortalSpawnedInThisArea = true; }
 
             function syncVoidItem(obj, yPos) { obj.x = x_pos + 16; obj.y = yPos; obj.velocity_x = pipe_speed; if (currentBGIndex === 4) { obj.oscillate = true; obj.baseY = obj.y; obj.phase = voidPhase; } return obj; }
             let rand = Math.random();
-            if (rand < SHIELD_SPAWN_CHANCE) { let newShield = new MySprite(); newShield.MyImg = SHIELD_IMG; shields.push(syncVoidItem(newShield, top_of_gap + gap_width/2 - 32)); } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE) { let newPotion = new MySprite(); newPotion.MyImg = POTION_IMG; potions.push(syncVoidItem(newPotion, top_of_gap + gap_width/2 - 15)); } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE + SLOW_POTION_SPAWN_CHANCE) { if (currentScore > 20) { let newSlow = new MySprite(); newSlow.MyImg = SLOW_POTION_IMG; slowPotions.push(syncVoidItem(newSlow, top_of_gap + gap_width/2 - 15)); } }
-            let currentStarChance = 0.5 + (currentBGIndex * 0.1); if (Math.random() < currentStarChance) { let newStar = new MySprite(); newStar.MyImg = STAR_IMG; stars.push(syncVoidItem(newStar, top_of_gap + gap_width*0.75 - 10)); }
+            if (rand < SHIELD_SPAWN_CHANCE) { let newShield = new MySprite(); newShield.MyImg = SHIELD_IMG; shields.push(syncVoidItem(newShield, newGapY + gap_width/2 - 32)); } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE) { let newPotion = new MySprite(); newPotion.MyImg = POTION_IMG; potions.push(syncVoidItem(newPotion, newGapY + gap_width/2 - 15)); } else if (rand < SHIELD_SPAWN_CHANCE + POTION_SPAWN_CHANCE + SLOW_POTION_SPAWN_CHANCE) { if (currentScore > 20) { let newSlow = new MySprite(); newSlow.MyImg = SLOW_POTION_IMG; slowPotions.push(syncVoidItem(newSlow, newGapY + gap_width/2 - 15)); } }
+            let currentStarChance = 0.5 + (currentBGIndex * 0.1); if (Math.random() < currentStarChance) { let newStar = new MySprite(); newStar.MyImg = STAR_IMG; stars.push(syncVoidItem(newStar, newGapY + gap_width*0.75 - 10)); }
         }
 
         function activateShield() { isShieldActive = true; shieldEndTime = Date.now() + SHIELD_DURATION_MS; if (shieldTimeoutID) clearTimeout(shieldTimeoutID); shieldTimeoutID = setTimeout(() => { deactivateShield(); }, SHIELD_DURATION_MS); bird.MyImg.src = SHIELDED_BIRD_IMG.src; }
@@ -1149,7 +1160,7 @@
                     if (isShieldActive || isDashActive) { if (isShieldActive) { deactivateShield(); pipes[i].visible = false; } continue; } 
                     else { if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));} pipes[i].visible = false; return; } 
                         if (game_mode === 'online_match') {
-                            handleOnlineWin('enemy');
+                            if (currentScore > enemyCurrentVisibleScore) { handleOnlineWin('player'); } else { handleOnlineWin('enemy'); }
                             return;
                         }
                         if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));} triggerGameOver("Game Over"); return; 
@@ -1197,6 +1208,7 @@
         }
 
         function display_score() {
+            if (game_mode === 'online_match') return; // Handled by custom UI
             ctx.font = 'bold 24px Arial'; ctx.textAlign = 'left'; ctx.strokeStyle = 'black'; ctx.lineWidth = 3;
             let displayStr = 'Score: ' + currentScore;
             if (currentBGIndex === 4 && Math.random() < 0.1) { displayStr = "Sc#re: " + Math.floor(Math.random()*999); }
@@ -1246,6 +1258,8 @@
             if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { dashCharges = 5; }
             document.getElementById('dash-btn').style.display = 'none';
             document.getElementById('bomb-btn').style.display = 'none';
+            // Start centered
+            lastPipeY = 250;
             add_pipe(CANVAS_WIDTH, 100, 140); deactivateShield(true); voidMusic.pause(); voidMusic.currentTime = 0;
             document.getElementById('jumpscare-vid').style.display = 'none';
         }
@@ -1277,7 +1291,7 @@
                         if (currentBGIndex === 4 && voidBreathingCount < MAX_BREATHING && Math.random() < 0.001) { breathingSound.play(); voidBreathingCount++; }
                         break;
                     case 'online_match':
-                        // Online Game Logic (Identical to running but with bot)
+                        // Online Game Logic
                         time_game_last_running = new Date(); bottom_bar_offset += pipe_speed * speedMultiplier;
                         for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); } 
                         pipe_spawn_timer += (1000 / FPS) * speedMultiplier; 
@@ -1285,19 +1299,20 @@
                         make_bird_slow_and_fall(); 
                         check_for_end_game(); 
                         check_for_score_increase();
-                        [pipes].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
+                        [pipes, shields, stars, potions, slowPotions].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
                         
-                        // Bot Logic
-                        updateOnlineBot();
-                        ctx.save();
-                        ctx.globalAlpha = 0.6;
-                        // Use default red bird for enemy
-                        if (!botBird.img) { botBird.img = new Image(); botBird.img.src = 'player_red.png'; }
-                        if (botBird.img.complete && !botBird.dead) {
-                             ctx.drawImage(botBird.img, botBird.x, botBird.y, bird.MyImg.width, bird.MyImg.height);
-                             ctx.fillStyle="white"; ctx.font="10px Arial"; ctx.fillText("OPPONENT", botBird.x, botBird.y - 10);
+                        // Simulate Enemy Score Updating visually
+                        if (!enemyHasCrashed) {
+                            // Enemy scores roughly at the same pace as pipe spawn (simulated)
+                            // We just use a frame counter approx to match game speed
+                            if (enemyCurrentVisibleScore < enemyTargetScore) {
+                                if (Math.random() < 0.02) enemyCurrentVisibleScore++;
+                            } else {
+                                enemyHasCrashed = true;
+                                document.getElementById('e-score').innerText = enemyCurrentVisibleScore + " (CRASH)";
+                            }
+                            if (!enemyHasCrashed) document.getElementById('e-score').innerText = enemyCurrentVisibleScore;
                         }
-                        ctx.restore();
                         break;
                     case 'over':
                         make_bird_slow_and_fall(); ctx.font = '22px "Press Start 2P"'; ctx.fillStyle = 'red'; ctx.textAlign = 'center'; ctx.fillText(deathMessage, myCanvas.width / 2, 100); ctx.font = '30px Arial'; ctx.fillText('Score: ' + currentScore, myCanvas.width / 2, 160); ctx.font = '20px Arial'; ctx.fillStyle = 'white'; ctx.fillText('Tap to return to Menu', myCanvas.width / 2, 250); break;
