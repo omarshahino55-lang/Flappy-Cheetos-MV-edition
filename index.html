@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.16 Pro UI</title> 
+     <title>Flying Cheetos: v4.17 Audio Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -180,7 +180,7 @@
          </div>
 
          <div id="landing-page"> 
-             <div class="update-badge">v4.16 PRO UI</div>
+             <div class="update-badge">v4.17 AUDIO FIX</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -198,7 +198,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.16 Pro UI</div>
+             <div class="version-text">v4.17 Audio Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -674,11 +674,25 @@
         }
 
         window.quitToMenu = function() {
-            togglePause(); // Unpause first to hide menu
+            // STOP ALL GAME AUDIO FORCEFULLY
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            voidMusic.pause();
+            voidMusic.currentTime = 0;
+            breathingSound.pause();
+            breathingSound.currentTime = 0;
+
+            // MANUALLY HIDE MENU (DON'T USE togglePause because it resumes music!)
+            isPaused = false;
+            document.getElementById('pause-menu').style.display = 'none';
+            document.getElementById('pause-btn').innerText = "||";
+
             document.getElementById('landing-page').style.display = 'flex'; 
             updateMenuStats(); 
             game_mode = 'waiting_for_website'; 
             reset_game();
+            
+            // Start Menu Music
             if(!musicMuted) mainMenuMusic.play().catch(e => console.log(e));
         }
 
