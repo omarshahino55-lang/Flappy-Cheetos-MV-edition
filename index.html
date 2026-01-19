@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.20 Instant Start</title> 
+     <title>Flying Cheetos: v4.21 Crash Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -205,7 +205,7 @@
          </div>
 
          <div id="landing-page"> 
-             <div class="update-badge">v4.20 INSTANT LOAD</div>
+             <div class="update-badge">v4.21 CRASH FIX</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -223,7 +223,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.20 Instant Load</div>
+             <div class="version-text">v4.21 Safe Draw Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -261,8 +261,6 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
      <script>
-        // ASSETS_TO_LOAD REMOVED - Using direct execution
-        
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
             authDomain: "flying-cheetos.firebaseapp.com",
@@ -499,7 +497,7 @@
         let pipe_speed = -2; let currentSpawnInterval = 2500; let speedMultiplier = 1; 
 
         var time_game_last_running; var bottom_bar_offset = 0; var pipes = []; var pipe_spawn_timer = 0; let currentScore = 0; 
-        let lastPipeY = 250; // For smoothing pipes in online mode
+        let lastPipeY = 250; 
 
         let totalGamesPlayed = 0;
         try { totalGamesPlayed = parseInt(localStorage.getItem('flappyGamesPlayed')) || 0; } catch(e) {}
@@ -522,11 +520,10 @@
         let onlineTrophies = 0;
         try { onlineTrophies = parseInt(localStorage.getItem('flappyTrophies')) || 0; } catch(e) {}
 
-        let online_score_player = 0; // Wins
-        let online_score_enemy = 0; // Wins
+        let online_score_player = 0; 
+        let online_score_enemy = 0; 
         let online_round = 1;
         
-        // Simulation Opponent Variables
         let enemyTargetScore = 0;
         let enemyCurrentVisibleScore = 0;
         let enemyHasCrashed = false;
@@ -607,6 +604,8 @@
             else { let mult = (this === bird) ? 1 : speedMultiplier; this.x += this.velocity_x * mult; }
             if (this.oscillate && (this.isText || this.MyImg.complete)) { this.y = this.baseY + Math.sin((Date.now() + this.phase) / 400) * 40; }
             let mult = (this === bird) ? 1 : speedMultiplier;
+            
+            // --- DRAW CHECK: IF TEXT ---
             if (this.isText) {
                 if (this.text === "DOWN HERE") {
                     ctx.fillStyle = (Math.floor(Date.now() / 200) % 2 === 0) ? "rgba(255, 0, 0, 0.5)" : "rgba(255, 255, 0, 0.5)";
@@ -616,15 +615,27 @@
                 if (!this.parentPipe) this.x += this.velocity_x * mult; 
                 return; 
             }
+            
+            // --- DRAW CHECK: IF ERROR BOX ---
             if (this.isError) {
                 ctx.fillStyle = "red"; ctx.fillRect(this.x, this.y, 100, 100);
                 ctx.font = "bold 20px Arial"; ctx.fillStyle = "white"; ctx.fillText("ERROR", this.x + 15, this.y + 55);
                 if (!this.parentPipe) this.x += this.velocity_x * mult; 
                 this.y += this.velocity_y * mult; return;
             }
-            if (!this.MyImg.complete || this.MyImg.naturalWidth === 0) return; 
+
+            // --- DRAW CHECK: IMAGE SAFETY ---
+            // If image is not loaded or has 0 width, draw placeholder instead of crashing
+            let drawWidth = 50; let drawHeight = 50;
+            let imgReady = (this.MyImg && this.MyImg.complete && this.MyImg.naturalWidth !== 0);
+            
+            if (imgReady) {
+                 drawWidth = this.MyImg.width;
+                 drawHeight = this.MyImg.height;
+            }
+
             if (this === bird && currentTrailKey !== 'trail_none' && (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match')) {
-                trailHistory.push({ x: this.x + 5, y: this.y + this.MyImg.height / 2 });
+                trailHistory.push({ x: this.x + 5, y: this.y + drawHeight / 2 });
                 if (trailHistory.length > 25) trailHistory.shift(); 
                 for(let i=0; i<trailHistory.length; i++) { trailHistory[i].x += pipe_speed * mult; }
                 if (trailHistory.length > 1) {
@@ -635,11 +646,24 @@
                     ctx.stroke();
                 }
             }
-            ctx.save(); ctx.translate(this.x + this.MyImg.width / 2, this.y + this.MyImg.height / 2); ctx.rotate((this.angle * Math.PI) / 180);
+
+            ctx.save(); 
+            ctx.translate(this.x + drawWidth / 2, this.y + drawHeight / 2); 
+            ctx.rotate((this.angle * Math.PI) / 180);
             if (this.flipV) ctx.scale(1, -1); if (this.flipH) ctx.scale(-1, 1);
-            if (isShieldActive && this === bird) { ctx.beginPath(); ctx.arc(0, 0, this.MyImg.width / 2 + 5, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; ctx.fill(); ctx.closePath(); }
+            
+            if (isShieldActive && this === bird) { ctx.beginPath(); ctx.arc(0, 0, drawWidth / 2 + 5, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(0, 255, 255, 0.5)'; ctx.fill(); ctx.closePath(); }
             if (isDashActive && this === bird) { ctx.globalAlpha = 0.5; }
-            if (this.visible) ctx.drawImage(this.MyImg, -this.MyImg.width / 2, -this.MyImg.height / 2);
+            
+            if (this.visible) {
+                if (imgReady) {
+                    ctx.drawImage(this.MyImg, -drawWidth / 2, -drawHeight / 2);
+                } else {
+                    // FALLBACK PLACEHOLDER
+                    ctx.fillStyle = "#FF00FF"; // Magenta square for missing texture
+                    ctx.fillRect(-20, -20, 40, 40);
+                }
+            }
             if (!this.oscillate && !this.parentPipe) this.y = this.y + this.velocity_y * mult;
             ctx.restore();
         };
@@ -649,8 +673,13 @@
         function ImagesTouching(thing1, thing2) {
             if (!thing1.visible || !thing2.visible) return false; 
             let w1, h1, w2, h2;
-            if (thing1.MyImg.complete) { w1 = thing1.MyImg.width; h1 = thing1.MyImg.height; } else { w1 = 30; h1 = 30; }
-            if (thing2.isText) { w2 = 180; h2 = 40; } else if (thing2.isError) { w2 = 100; h2 = 100; } else if (thing2.MyImg.complete) { w2 = thing2.MyImg.width; h2 = thing2.MyImg.height; } else { w2 = thing2.width || 50; h2 = thing2.height || 50; }
+            // Use safe dimensions
+            if (thing1.MyImg && thing1.MyImg.complete && thing1.MyImg.naturalWidth !== 0) { w1 = thing1.MyImg.width; h1 = thing1.MyImg.height; } else { w1 = 40; h1 = 40; }
+            if (thing2.isText) { w2 = 180; h2 = 40; } 
+            else if (thing2.isError) { w2 = 100; h2 = 100; } 
+            else if (thing2.MyImg && thing2.MyImg.complete && thing2.MyImg.naturalWidth !== 0) { w2 = thing2.MyImg.width; h2 = thing2.MyImg.height; } 
+            else { w2 = thing2.width || 40; h2 = thing2.height || 40; }
+            
             if (thing1.x >= thing2.x + w2 || thing1.x + w1 <= thing2.x) return false;
             if (thing1.y >= thing2.y + h2 || thing1.y + h1 <= thing2.y) return false;
             return true;
@@ -824,13 +853,11 @@
             updateOnlineUI();
             flashTimer = 0;
             
-            // Simulate Enemy Difficulty based on Trophies
-            // Base difficulty: 5-15. Trophies add roughly 1 point per 10 trophies.
             let baseDiff = 5 + Math.floor(Math.random() * 10);
             let skillBonus = Math.floor(onlineTrophies / 15);
             enemyTargetScore = baseDiff + skillBonus;
             // Variance
-            if (Math.random() < 0.2) enemyTargetScore += 20; // Tryhard opponent
+            if (Math.random() < 0.2) enemyTargetScore += 20; 
             
             enemyCurrentVisibleScore = 0;
             enemyHasCrashed = false;
@@ -933,12 +960,15 @@
         }
 
         function updateBoss() {
-            if (boss.movingIn) { boss.x -= 2 * speedMultiplier; if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false; let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); return; }
+            if (boss.movingIn) { boss.x -= 2 * speedMultiplier; if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false; let img = (isBoss2 && BOSS2_IMG.complete && BOSS2_IMG.naturalWidth !== 0) ? BOSS2_IMG : BOSS_IMG; if (img.complete && img.naturalWidth !== 0) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); return; }
             if (bossIntroState < 4) {
                 document.getElementById('dash-btn').style.display = 'none';
                 document.getElementById('bomb-btn').style.display = 'none';
 
-                let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+                let img = (isBoss2 && BOSS2_IMG.complete && BOSS2_IMG.naturalWidth !== 0) ? BOSS2_IMG : BOSS_IMG; 
+                if (img.complete && img.naturalWidth !== 0) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+                else { ctx.fillStyle = "red"; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); } // Placeholder boss
+
                 if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
                 if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
                 else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
@@ -953,7 +983,10 @@
                 document.getElementById('dash-btn').style.display = 'none';
                 document.getElementById('bomb-btn').style.display = 'none';
 
-                let img = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (img.complete) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height); 
+                let img = (isBoss2 && BOSS2_IMG.complete && BOSS2_IMG.naturalWidth !== 0) ? BOSS2_IMG : BOSS_IMG; 
+                if (img.complete && img.naturalWidth !== 0) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
+                else { ctx.fillStyle = "red"; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); }
+                
                 drawDialogueBox("YOU ARE MAKING A\nBIG MISTAKE"); 
                 bossIntroTimer--; 
                 if (bossIntroTimer <= 0) { 
@@ -965,7 +998,11 @@
                 } 
                 return; 
             }
-            boss.y += boss.speedY * speedMultiplier; if (boss.y > 300 || boss.y < 50) boss.speedY *= -1; let fightImg = (isBoss2 && BOSS2_IMG.complete) ? BOSS2_IMG : BOSS_IMG; if (fightImg.complete) ctx.drawImage(fightImg, boss.x, boss.y, boss.width, boss.height);
+            boss.y += boss.speedY * speedMultiplier; if (boss.y > 300 || boss.y < 50) boss.speedY *= -1; 
+            let fightImg = (isBoss2 && BOSS2_IMG.complete && BOSS2_IMG.naturalWidth !== 0) ? BOSS2_IMG : BOSS_IMG; 
+            if (fightImg.complete && fightImg.naturalWidth !== 0) ctx.drawImage(fightImg, boss.x, boss.y, boss.width, boss.height);
+            else { ctx.fillStyle = "red"; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); }
+
             if (!isBoss2) { if (Math.random() < 0.06) spawnChocolate(); boss.stamina -= 0.1; if (boss.stamina <= 0) { unlockAchievement('monster'); triggerFlash("lime"); collectedStars += 100; localStorage.setItem('flappyStars', collectedStars); showCheatFeedback("BOSS DEFEATED! +100 STARS"); currentLives += 2; showCheatFeedback("BOSS DEFEATED! +2 LIVES"); victoryTimer = 100; game_mode = 'running'; currentScore = 51; boss.x = CANVAS_WIDTH + 500; chocolates = []; pipe_spawn_timer = 0; bossIntroState = 0; boss.movingIn = true; boss.stamina = 100; } } 
             else { 
                 if (Math.random() < 0.05) { 
@@ -1046,9 +1083,6 @@
                     startSecretEnding(); return; 
                 }
                 if (game_mode === 'online_match') {
-                     // NEW WIN CONDITION:
-                     // If player crashes, we check if they beat the enemy score.
-                     // Since we don't know the TRUE enemy score until they crash, we use the Visible Simulated Score
                      if (currentScore > enemyCurrentVisibleScore) {
                          handleOnlineWin('player');
                      } else {
@@ -1067,13 +1101,10 @@
             if (currentScore === 98 && !secretSign) { spawnSecretSign(); }
             
             // --- NEW SMOOTHING LOGIC ---
-            // Instead of pure random, we look at the last pipe's top gap
             let minGapY = Math.max(50, lastPipeY - 150);
             let maxGapY = Math.min(myCanvas.height - 300, lastPipeY + 150);
-            
-            // Randomly choose a new gap within the safe vertical range
             let newGapY = Math.floor(Math.random() * (maxGapY - minGapY + 1)) + minGapY;
-            lastPipeY = newGapY; // Update for next time
+            lastPipeY = newGapY;
 
             var top_pipe = new MySprite(); top_pipe.MyImg = pipe_piece; top_pipe.x = x_pos; top_pipe.y = newGapY - pipe_piece.height; top_pipe.velocity_x = pipe_speed;
             var bottom_pipe = new MySprite(); bottom_pipe.MyImg = pipe_piece; bottom_pipe.flipV = true; bottom_pipe.x = x_pos; bottom_pipe.y = newGapY + gap_width; bottom_pipe.velocity_x = pipe_speed;
@@ -1231,6 +1262,8 @@
                 ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
                 
                 if (backgroundImages[currentBGIndex] && backgroundImages[currentBGIndex].complete) { ctx.drawImage(backgroundImages[currentBGIndex], 0, 0, myCanvas.width, myCanvas.height); }
+                else { ctx.fillStyle = "#222"; ctx.fillRect(0,0,myCanvas.width,myCanvas.height); } // Fallback BG
+
                 bird.Do_Frame_Things();
                 if (bottom_bar.complete && bossIntroState >= 3) { if (bottom_bar_offset < -23) bottom_bar_offset = 0; ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height); } else if (bottom_bar.complete && game_mode !== 'boss') { if (bottom_bar_offset < -23) bottom_bar_offset = 0; ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height); } else if (bottom_bar.complete) { ctx.drawImage(bottom_bar, bottom_bar_offset, myCanvas.height - bottom_bar.height); }
                 if (secretSign) { secretSign.Do_Frame_Things(); if (secretSign.x < -200) secretSign = null; }
@@ -1260,8 +1293,6 @@
                         
                         // Simulate Enemy Score Updating visually
                         if (!enemyHasCrashed) {
-                            // Enemy scores roughly at the same pace as pipe spawn (simulated)
-                            // We just use a frame counter approx to match game speed
                             if (enemyCurrentVisibleScore < enemyTargetScore) {
                                 if (Math.random() < 0.02) enemyCurrentVisibleScore++;
                             } else {
