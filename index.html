@@ -278,6 +278,11 @@
         let auth = null;
         let currentUser = null;
         let unsubscribeChat = null;
+        
+        // --- REAL ONLINE VARIABLES ---
+        let activeMatchID = null;
+        let myOnlineRole = null; // 'host' or 'guest'
+        let unsubscribeMatch = null;
 
         // SAFE INITIALIZATION
         try {
@@ -500,7 +505,7 @@
 
         var jump_amount = -7; var max_fall_speed = +8; var acceleration = 0.6;      
         const SUPER_JUMP_AMOUNT = -3.8; const SUPER_ACCELERATION = 0.18; const SUPER_MAX_FALL_SPEED = +3.5;  
-        const VOID_ACCEL = 0.35; const VOID_MAX_FALL = 6.0;   
+        const VOID_ACCEL = 0.35; const VOID_MAX_FALL = 6.0;    
         const MAGNET_RADIUS = 300; const INITIAL_LIVES = 3; let currentLives = 0; 
         const MAX_DESTROY_CHARGES = 2; let wallDestroyCharges = 0; const WALLS_TO_DESTROY = 2; 
         let dashCharges = 0; let isDashActive = false; const DASH_DURATION = 68; let dashTimer = 0;
@@ -592,7 +597,7 @@
             { id: 'error_death', title: 'OOPS AN ERROR', desc: '???', unlocked: false },
             { id: 'bite_98', title: 'THE BITE OF 98', desc: '???', unlocked: false }
         ];
-        let savedAchievements = [];
+let savedAchievements = [];
         try {
             savedAchievements = JSON.parse(localStorage.getItem('flappyAchievements')) || [];
             ALL_ACHIEVEMENTS.forEach(ach => { if (savedAchievements.includes(ach.id)) ach.unlocked = true; });
@@ -724,6 +729,13 @@
             voidMusic.pause(); voidMusic.currentTime = 0;
             breathingSound.pause(); breathingSound.currentTime = 0;
 
+            if (activeMatchID && unsubscribeMatch) {
+                // Surrender if quitting online match
+                db.collection('matches').doc(activeMatchID).update({ status: 'ended' });
+                unsubscribeMatch();
+                activeMatchID = null;
+            }
+
             isPaused = false;
             document.getElementById('pause-menu').style.display = 'none';
             document.getElementById('pause-btn').innerText = "||";
@@ -807,38 +819,103 @@
             if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
         }
 
-        window.startOnlineMode = function() {
+        // --- REAL ONLINE MATCHMAKING ---
+        window.startOnlineMode = async function() {
+            if (!auth || !currentUser) return alert("You must login to play Online!");
+            if (!db) return alert("Database offline!");
+
             document.getElementById('mode-select-modal').style.display = 'none';
             mainMenuMusic.pause(); 
             mainMenuMusic.currentTime = 0;
             
-            // Show fake loading screen
+            // Show REAL searching screen
             document.getElementById('landing-page').style.display = 'none'; 
             let loadScr = document.createElement('div');
             loadScr.id = "temp-online-loader";
-            loadScr.style.position = "absolute"; loadScr.style.top=0; loadScr.style.left=0; loadScr.style.width="100%"; loadScr.style.height="100%"; loadScr.style.background="black"; loadScr.style.color="white"; loadScr.style.display="flex"; loadScr.style.justifyContent="center"; loadScr.style.alignItems="center"; loadScr.style.fontFamily="'Press Start 2P'"; loadScr.innerHTML = "SEARCHING FOR MATCH...";
+            loadScr.style.position = "absolute"; loadScr.style.top=0; loadScr.style.left=0; loadScr.style.width="100%"; loadScr.style.height="100%"; loadScr.style.background="black"; loadScr.style.color="white"; loadScr.style.display="flex"; loadScr.style.justifyContent="center"; loadScr.style.alignItems="center"; loadScr.style.fontFamily="'Press Start 2P'"; loadScr.innerHTML = "SEARCHING FOR OPPONENT...";
             document.getElementById('game-container').appendChild(loadScr);
             
-            setTimeout(() => {
-                let existing = document.getElementById('temp-online-loader');
-                if(existing) existing.remove();
-                reset_game();
-                game_mode = 'online_match';
-                online_score_player = 0; 
-                online_score_enemy = 0; 
-                online_round = 1;
-                
-                resetOnlineRound();
+            try {
+                // 1. Look for an open match
+                const openMatches = await db.collection('matches')
+                    .where('status', '==', 'searching')
+                    .limit(1)
+                    .get();
 
-                document.getElementById('online-ui').style.display = 'block';
-                updateOnlineUI();
+                if (!openMatches.empty) {
+                    // JOIN MATCH
+                    const matchDoc = openMatches.docs[0];
+                    activeMatchID = matchDoc.id;
+                    myOnlineRole = 'guest';
+                    await db.collection('matches').doc(activeMatchID).update({
+                        guestId: currentUser.uid,
+                        guestName: currentUser.displayName,
+                        status: 'starting'
+                    });
+                } else {
+                    // CREATE MATCH
+                    const newMatch = await db.collection('matches').add({
+                        hostId: currentUser.uid,
+                        hostName: currentUser.displayName,
+                        status: 'searching',
+                        hostScore: 0,
+                        guestScore: 0,
+                        round: 1,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    activeMatchID = newMatch.id;
+                    myOnlineRole = 'host';
+                }
 
-                document.getElementById('pause-btn').style.display = 'block';
-                if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
-                if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
+                // Listen to match updates
+                unsubscribeMatch = db.collection('matches').doc(activeMatchID)
+                    .onSnapshot((doc) => {
+                        const data = doc.data();
+                        if (!data) return;
 
-                if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
-            }, 2500);
+                        if (data.status === 'starting' && document.getElementById('temp-online-loader')) {
+                            // Start Game
+                            document.getElementById('temp-online-loader').remove();
+                            startGameLoopOnline();
+                        }
+                        
+                        // Update Scores Realtime
+                        if (myOnlineRole === 'host') {
+                            online_score_enemy = data.guestScore || 0;
+                            enemyCurrentVisibleScore = online_score_enemy; // Sync visual
+                        } else {
+                            online_score_enemy = data.hostScore || 0;
+                            enemyCurrentVisibleScore = online_score_enemy;
+                        }
+
+                        // Round / End Logic can be expanded here
+                        // For simplicity, we just sync scores and check win conditions locally in game loop
+                    });
+
+            } catch(e) {
+                console.error("Matchmaking error:", e);
+                alert("Matchmaking failed. Try again.");
+                quitToMenu();
+            }
+        }
+
+        function startGameLoopOnline() {
+             reset_game();
+             game_mode = 'online_match';
+             online_score_player = 0; 
+             online_score_enemy = 0; 
+             online_round = 1;
+             
+             resetOnlineRound();
+
+             document.getElementById('online-ui').style.display = 'block';
+             updateOnlineUI();
+
+             document.getElementById('pause-btn').style.display = 'block';
+             if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
+             if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
+
+             if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
         }
 
         function updateOnlineUI() {
@@ -857,13 +934,8 @@
             updateOnlineUI();
             flashTimer = 0;
             
-            let baseDiff = 5 + Math.floor(Math.random() * 10);
-            let skillBonus = Math.floor(onlineTrophies / 15);
-            enemyTargetScore = baseDiff + skillBonus;
-            // Variance
-            if (Math.random() < 0.2) enemyTargetScore += 20; 
-            
-            enemyCurrentVisibleScore = 0;
+            // In real online, we don't set enemy target score, we wait for listener updates
+            enemyCurrentVisibleScore = 0; 
             enemyHasCrashed = false;
         }
 
@@ -891,6 +963,12 @@
                 onlineTrophies += trophyChange;
                 localStorage.setItem('flappyTrophies', onlineTrophies);
                 saveUserData();
+
+                // Close match in DB
+                if (activeMatchID) {
+                    db.collection('matches').doc(activeMatchID).update({ status: 'ended' });
+                    if(unsubscribeMatch) unsubscribeMatch();
+                }
 
                 setTimeout(() => {
                      let msg = wonMatch ? `VICTORY! +${trophyChange} 🏆` : `DEFEAT... ${trophyChange} 🏆`;
@@ -979,8 +1057,26 @@
                 else { ctx.fillStyle = "red"; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); } // Placeholder boss
 
                 if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
-                if (!isBoss2) { if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
-                else { if (bossIntroState === 1) { drawDialogueBox("you are getting out of control"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 2) { drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } else if (bossIntroState === 3) { drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } } 
+                if (!isBoss2) { 
+                    if (bossIntroState === 1) { drawDialogueBox("oh, here you are"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} } 
+                    else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } 
+                } 
+                else { 
+                    // --- BOSS 2 LOGIC FIX ---
+                    if (bossIntroState === 1) { 
+                        drawDialogueBox("you are getting out of control"); bossIntroTimer--; 
+                        if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} 
+                    } 
+                    else if (bossIntroState === 2) { 
+                        drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; 
+                        // FIXED: Progress to State 3, not State 2 again (Infinite Loop Fix)
+                        if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} 
+                    } 
+                    else if (bossIntroState === 3) { 
+                        drawDialogueBox("Its too late to go back now...."); bossIntroTimer--; 
+                        if(bossIntroTimer<=0){bossIntroState=5;} 
+                    } 
+                } 
                 
                 if (bossIntroState === 5) {
                     if ((currentSkinKey === 'doordash' || currentSkinKey === 'black') && dashCharges > 0) document.getElementById('dash-btn').style.display = 'flex';
@@ -988,7 +1084,7 @@
                 }
                 return;
             }
-            if (bossIntroState === 4) { 
+if (bossIntroState === 4) { 
                 document.getElementById('dash-btn').style.display = 'none';
                 document.getElementById('bomb-btn').style.display = 'none';
 
@@ -1092,12 +1188,13 @@
                     startSecretEnding(); return; 
                 }
                 if (game_mode === 'online_match') {
-                     if (currentScore > enemyCurrentVisibleScore) {
-                         handleOnlineWin('player');
-                     } else {
-                         handleOnlineWin('enemy');
-                     }
-                     return;
+                      // Check scores to determine round winner
+                      if (currentScore > online_score_enemy) {
+                          handleOnlineWin('player');
+                      } else {
+                          handleOnlineWin('enemy');
+                      }
+                      return;
                 }
                 bird.velocity_y = 0; triggerGameOver("Game Over"); 
             }
@@ -1157,7 +1254,7 @@
                     if (isShieldActive || isDashActive) { if (isShieldActive) { deactivateShield(); pipes[i].visible = false; } continue; } 
                     else { if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));} pipes[i].visible = false; return; } 
                         if (game_mode === 'online_match') {
-                            if (currentScore > enemyCurrentVisibleScore) { handleOnlineWin('player'); } else { handleOnlineWin('enemy'); }
+                            if (currentScore > online_score_enemy) { handleOnlineWin('player'); } else { handleOnlineWin('enemy'); }
                             return;
                         }
                         if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));} triggerGameOver("Game Over"); return; 
@@ -1190,6 +1287,15 @@
                         if (currentBGIndex === 4 && !musicMuted) { bgMusic.pause(); bgMusic.currentTime = 0; voidMusic.play().catch(e => console.log(e)); }
                     }
                     if (currentScore > 10) unlockAchievement('beginner'); if (currentScore > 20) unlockAchievement('hang'); if (currentScore > 30) unlockAchievement('sunset'); if (currentScore > 40) unlockAchievement('void');
+                    
+                    // --- REALTIME SCORE SYNC ---
+                    if (game_mode === 'online_match' && activeMatchID) {
+                        if (myOnlineRole === 'host') {
+                            db.collection('matches').doc(activeMatchID).update({ hostScore: currentScore });
+                        } else {
+                            db.collection('matches').doc(activeMatchID).update({ guestScore: currentScore });
+                        }
+                    }
                 }
             }
         }
@@ -1300,15 +1406,12 @@
                         check_for_score_increase();
                         [pipes, shields, stars, potions, slowPotions].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
                         
-                        // Simulate Enemy Score Updating visually
+                        // REAL MATCH: We use the value sync'd from Firestore in startOnlineMode listeners
                         if (!enemyHasCrashed) {
-                            if (enemyCurrentVisibleScore < enemyTargetScore) {
-                                if (Math.random() < 0.02) enemyCurrentVisibleScore++;
-                            } else {
-                                enemyHasCrashed = true;
-                                document.getElementById('e-score').innerText = enemyCurrentVisibleScore + " (CRASH)";
-                            }
-                            if (!enemyHasCrashed && !isNaN(enemyCurrentVisibleScore)) document.getElementById('e-score').innerText = enemyCurrentVisibleScore;
+                            // We now just display the realtime value
+                            if (!isNaN(online_score_enemy)) document.getElementById('e-score').innerText = online_score_enemy;
+                        } else {
+                             document.getElementById('e-score').innerText = online_score_enemy + " (CRASH)";
                         }
                         break;
                     case 'over':
