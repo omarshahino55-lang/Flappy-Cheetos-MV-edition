@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: v4.21 not working yet</title> 
+     <title>Flying Cheetos: v4.21 ULTIMATE</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -135,7 +135,7 @@
              #pause-menu h1 { font-size: 30px; }
          }
      </style> 
- </head> 
+ </head>
  <body> 
 
      <div id="game-container"> 
@@ -205,7 +205,7 @@
          </div>
 
          <div id="landing-page"> 
-             <div class="update-badge">v4.21 CRASH FIX</div>
+             <div class="update-badge">v4.21 ULTIMATE</div>
              <h1>Flying Cheetos</h1> 
              <img src="player.png" class="preview-img" alt="Cheetos" onclick="playNoseSound()" ontouchstart="playNoseSound()"> 
              
@@ -213,6 +213,7 @@
                  <div class="stat-box">High Score<br><span class="stat-val" id="menuHighScore">0</span></div>
                  <div class="stat-box">Stars<br><span class="stat-val" id="menuStars">0</span></div>
                  <div class="stat-box">Trophies<br><span class="stat-val" id="menuTrophies">0</span></div>
+                 <div class="stat-box">Games<br><span class="stat-val" id="menuGamesPlayed">0</span></div>
              </div>
 
              <div class="menu-buttons">
@@ -223,7 +224,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.21 Safe Draw Fix</div>
+             <div class="version-text">v4.21 Stable Build</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -261,6 +262,7 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
      <script>
+        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
             authDomain: "flying-cheetos.firebaseapp.com",
@@ -277,8 +279,9 @@
         let currentUser = null;
         let unsubscribeChat = null;
 
+        // SAFE INITIALIZATION
         try {
-            if (firebaseConfig.apiKey) {
+            if (firebaseConfig.apiKey && typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
                 auth = firebase.auth();
                 db = firebase.firestore();
@@ -301,11 +304,13 @@
                         document.getElementById('user-avatar').style.display = 'none';
                     }
                 });
-            } else { console.warn("Firebase Config missing!"); }
-        } catch(e) { console.error("Firebase Error:", e); }
+            } else { 
+                console.warn("Firebase scripts not loaded or Config missing! Offline Mode."); 
+            }
+        } catch(e) { console.error("Firebase Error (Running Offline):", e); }
 
         window.signInWithGoogle = function() {
-            if(!auth) return alert("Firebase not configured!");
+            if(!auth) return alert("Offline Mode: Login unavailable.");
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).catch(e => alert(e.message));
         }
@@ -367,7 +372,7 @@
             document.getElementById('leaderboardModal').style.display = 'block';
             const tbody = document.getElementById('leaderboardBody');
             tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
-            if (!db) { tbody.innerHTML = '<tr><td colspan="3">Database Error</td></tr>'; return; }
+            if (!db) { tbody.innerHTML = '<tr><td colspan="3">Offline Mode</td></tr>'; return; }
             try {
                 const q = await db.collection('scores').orderBy('score', 'desc').limit(10).get();
                 tbody.innerHTML = '';
@@ -384,7 +389,10 @@
 
         window.openChat = function() {
             document.getElementById('chatModal').style.display = 'block';
-            if (!db) return;
+            if (!db) { 
+                document.getElementById('chat-box').innerHTML = '<div style="color:red; text-align:center;">Offline Mode: Chat unavailable.</div>';
+                return; 
+            }
             if (unsubscribeChat) unsubscribeChat();
             const chatBox = document.getElementById('chat-box');
             chatBox.innerHTML = '<div style="color:#aaa; text-align:center; padding:10px;">Loading messages...</div>';
@@ -418,6 +426,7 @@
         }
         window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; if (id === 'chatModal' && unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; } }
 
+        // --- GLOBAL VARIABLES & ASSETS ---
         var game_mode = 'waiting_for_website'; 
         var myCanvas, ctx;
         var gameInterval = null; 
@@ -441,6 +450,7 @@
         const backgroundImages = [];
         for (let i = 1; i <= 5; i++) { let img = new Image(); img.src = `bg${i}.png`; backgroundImages.push(img); }
 
+        // AUDIO SYSTEM with Safety Checks
         const mainMenuMusic = new Audio('main_menu.mp3'); 
         mainMenuMusic.loop = true; 
         mainMenuMusic.volume = 0.3;
@@ -589,11 +599,11 @@
         } catch(e) {}
         let highScore = 0;
         try { highScore = parseInt(localStorage.getItem('flappyHighScore')) || 0; } catch(e) {}
-
-        function MySprite(img_url) {
+      function MySprite(img_url) {
             this.x = 0; this.y = 0; this.visible = true; 
             this.velocity_x = 0; this.velocity_y = 0;
-            this.MyImg = new Image(); this.MyImg.src = img_url || '';
+            this.MyImg = new Image(); 
+            if(img_url) this.MyImg.src = img_url;
             this.angle = 0; this.flipV = false; this.flipH = false; this.passed = false; 
             this.isText = false; this.text = ""; this.isError = false; 
             this.oscillate = false; this.baseY = 0; this.phase = 0; this.parentPipe = null; 
@@ -624,8 +634,8 @@
                 this.y += this.velocity_y * mult; return;
             }
 
-            // --- DRAW CHECK: IMAGE SAFETY ---
-            // If image is not loaded or has 0 width, draw placeholder instead of crashing
+            // --- CRASH FIX: SAFE IMAGE RENDERING ---
+            // If image is not loaded or has 0 width, use fallback dimensions
             let drawWidth = 50; let drawHeight = 50;
             let imgReady = (this.MyImg && this.MyImg.complete && this.MyImg.naturalWidth !== 0);
             
@@ -659,8 +669,8 @@
                 if (imgReady) {
                     ctx.drawImage(this.MyImg, -drawWidth / 2, -drawHeight / 2);
                 } else {
-                    // FALLBACK PLACEHOLDER
-                    ctx.fillStyle = "#FF00FF"; // Magenta square for missing texture
+                    // FALLBACK PLACEHOLDER (Prevents Crash)
+                    ctx.fillStyle = "#FF00FF"; 
                     ctx.fillRect(-20, -20, 40, 40);
                 }
             }
@@ -673,7 +683,7 @@
         function ImagesTouching(thing1, thing2) {
             if (!thing1.visible || !thing2.visible) return false; 
             let w1, h1, w2, h2;
-            // Use safe dimensions
+            // Safe dimensions
             if (thing1.MyImg && thing1.MyImg.complete && thing1.MyImg.naturalWidth !== 0) { w1 = thing1.MyImg.width; h1 = thing1.MyImg.height; } else { w1 = 40; h1 = 40; }
             if (thing2.isText) { w2 = 180; h2 = 40; } 
             else if (thing2.isError) { w2 = 100; h2 = 100; } 
@@ -710,15 +720,10 @@
         }
 
         window.quitToMenu = function() {
-            // STOP ALL GAME AUDIO FORCEFULLY
-            bgMusic.pause();
-            bgMusic.currentTime = 0;
-            voidMusic.pause();
-            voidMusic.currentTime = 0;
-            breathingSound.pause();
-            breathingSound.currentTime = 0;
+            bgMusic.pause(); bgMusic.currentTime = 0;
+            voidMusic.pause(); voidMusic.currentTime = 0;
+            breathingSound.pause(); breathingSound.currentTime = 0;
 
-            // MANUALLY HIDE MENU (DON'T USE togglePause because it resumes music!)
             isPaused = false;
             document.getElementById('pause-menu').style.display = 'none';
             document.getElementById('pause-btn').innerText = "||";
@@ -729,7 +734,6 @@
             game_mode = 'waiting_for_website'; 
             reset_game();
             
-            // Start Menu Music
             if(!musicMuted) mainMenuMusic.play().catch(e => console.log(e));
         }
 
@@ -809,18 +813,19 @@
             mainMenuMusic.currentTime = 0;
             
             // Show fake loading screen
-            document.getElementById('landing-page').style.display = 'none'; // Ensure main menu gone
+            document.getElementById('landing-page').style.display = 'none'; 
             let loadScr = document.createElement('div');
             loadScr.id = "temp-online-loader";
             loadScr.style.position = "absolute"; loadScr.style.top=0; loadScr.style.left=0; loadScr.style.width="100%"; loadScr.style.height="100%"; loadScr.style.background="black"; loadScr.style.color="white"; loadScr.style.display="flex"; loadScr.style.justifyContent="center"; loadScr.style.alignItems="center"; loadScr.style.fontFamily="'Press Start 2P'"; loadScr.innerHTML = "SEARCHING FOR MATCH...";
             document.getElementById('game-container').appendChild(loadScr);
             
             setTimeout(() => {
-                document.getElementById('temp-online-loader').remove();
+                let existing = document.getElementById('temp-online-loader');
+                if(existing) existing.remove();
                 reset_game();
                 game_mode = 'online_match';
-                online_score_player = 0; // Rounds
-                online_score_enemy = 0; // Rounds
+                online_score_player = 0; 
+                online_score_enemy = 0; 
                 online_round = 1;
                 
                 resetOnlineRound();
@@ -829,7 +834,6 @@
                 updateOnlineUI();
 
                 document.getElementById('pause-btn').style.display = 'block';
-                // Activate abilities buttons if applicable
                 if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
                 if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
 
@@ -882,7 +886,7 @@
                 // MATCH OVER
                 let wonMatch = online_score_player > online_score_enemy;
                 let trophyChange = wonMatch ? 25 : -15;
-                if (!wonMatch && onlineTrophies < 15) trophyChange = -onlineTrophies; // Can't go below 0 easily
+                if (!wonMatch && onlineTrophies < 15) trophyChange = -onlineTrophies; 
 
                 onlineTrophies += trophyChange;
                 localStorage.setItem('flappyTrophies', onlineTrophies);
@@ -899,7 +903,7 @@
             }
         }
         
-        // --- NEW TOGGLE FUNCTIONS ---
+        // --- FIXED TOGGLE FUNCTIONS ---
         window.toggleMusicSwitch = function(isChecked) {
             musicMuted = !isChecked; 
             if (musicMuted) { 
@@ -907,7 +911,12 @@
                 bgMusic.pause(); 
                 voidMusic.pause(); 
             } else {
-                // If paused, don't play yet, wait for resume.
+                // RESUME MUSIC IF GAME IS ACTIVE
+                if (!isPaused && (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match')) {
+                    if (currentBGIndex === 4) voidMusic.play(); else bgMusic.play();
+                } else if (game_mode === 'waiting_for_website' || game_mode === 'shop_from_menu') {
+                    mainMenuMusic.play();
+                }
             }
         }
 
@@ -1100,7 +1109,7 @@
             if (isBoss2 && game_mode === 'running') { let isTop = Math.random() < 0.5; let wall = new MySprite(); wall.isText = true; wall.text = "undefined"; wall.x = x_pos; wall.velocity_x = pipe_speed; if (isTop) wall.y = top_of_gap - 50; else wall.y = top_of_gap + gap_width + 50; if (currentBGIndex === 4) { wall.oscillate = true; wall.baseY = wall.y; wall.phase = Date.now(); } pipes.push(wall); return; }
             if (currentScore === 98 && !secretSign) { spawnSecretSign(); }
             
-            // --- NEW SMOOTHING LOGIC ---
+            // --- SMOOTHING LOGIC ---
             let minGapY = Math.max(50, lastPipeY - 150);
             let maxGapY = Math.min(myCanvas.height - 300, lastPipeY + 150);
             let newGapY = Math.floor(Math.random() * (maxGapY - minGapY + 1)) + minGapY;
@@ -1299,7 +1308,7 @@
                                 enemyHasCrashed = true;
                                 document.getElementById('e-score').innerText = enemyCurrentVisibleScore + " (CRASH)";
                             }
-                            if (!enemyHasCrashed) document.getElementById('e-score').innerText = enemyCurrentVisibleScore;
+                            if (!enemyHasCrashed && !isNaN(enemyCurrentVisibleScore)) document.getElementById('e-score').innerText = enemyCurrentVisibleScore;
                         }
                         break;
                     case 'over':
@@ -1342,9 +1351,12 @@
             let clickX = 0; let clickY = 0;
             if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
                 const rect = myCanvas.getBoundingClientRect();
+                // SAFE TOUCH HANDLING
                 const clientX = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientX : MyEvent.clientX;
                 const clientY = (MyEvent.touches && MyEvent.touches.length > 0) ? MyEvent.touches[0].clientY : MyEvent.clientY;
-                if (clientX === undefined) return;
+                
+                if (clientX === undefined) return; // Ignore ghost events
+
                 clickX = (clientX - rect.left) * (myCanvas.width / rect.width);
                 clickY = (clientY - rect.top) * (myCanvas.height / rect.height);
             }
@@ -1397,4 +1409,3 @@
      </script> 
  </body> 
 </html>
-
