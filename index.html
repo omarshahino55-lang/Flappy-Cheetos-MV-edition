@@ -34,7 +34,25 @@
          #delete-boss-btn { display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background-color: red; color: white; font-family: 'Press Start 2P', cursive; font-size: 20px; padding: 15px 30px; border: 4px solid white; cursor: pointer; z-index: 100; box-shadow: 0 0 15px red; animation: bossPulse 0.5s infinite; }
          #delete-boss-btn:active { background-color: darkred; transform: translateX(-50%) scale(0.95); }
          
-         #pause-btn { display: none; position: absolute; top: 10px; left: 10px; background-color: rgba(0, 0, 0, 0.6); color: white; border: 2px solid white; border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; z-index: 90; font-family: 'Press Start 2P', cursive; font-size: 14px; box-shadow: 0 0 5px rgba(255,255,255,0.5); }
+         /* UPDATED SETTINGS BUTTON (Formerly Pause) */
+         #settings-btn { 
+             display: block; /* Always visible now */
+             position: absolute; 
+             top: 10px; 
+             left: 10px; 
+             background-color: rgba(0, 0, 0, 0.6); 
+             color: white; 
+             border: 2px solid white; 
+             border-radius: 8px; 
+             padding: 8px 10px; 
+             font-weight: bold; 
+             cursor: pointer; 
+             z-index: 90; 
+             font-family: 'Press Start 2P', cursive; 
+             font-size: 18px; 
+             box-shadow: 0 0 5px rgba(255,255,255,0.5); 
+         }
+
          #dash-btn { display: none; position: absolute; bottom: 20px; right: 20px; background-color: #ff4500; color: white; font-family: 'Press Start 2P', cursive; font-size: 16px; padding: 0; border: 3px solid white; border-radius: 50%; cursor: pointer; z-index: 80; box-shadow: 0 0 10px orange; width: 80px; height: 80px; justify-content: center; align-items: center; text-align: center; }
          #bomb-btn { display: none; position: absolute; bottom: 20px; left: 20px; background-color: #c0392b; color: white; font-family: 'Press Start 2P', cursive; font-size: 14px; padding: 0; border: 3px solid white; border-radius: 10px; cursor: pointer; z-index: 80; box-shadow: 0 0 10px red; width: 80px; height: 60px; justify-content: center; align-items: center; text-align: center; line-height: 1.5; }
 
@@ -72,12 +90,15 @@
          .mode-card h3 { font-family: 'Press Start 2P', cursive; margin-bottom: 10px; font-size: 20px; }
          .mode-desc { color: #aaa; font-family: 'Roboto', sans-serif; font-size: 14px; }
          
-         /* ONLINE UI */
-         #online-ui { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 340px; background: rgba(0,0,0,0.6); border: 2px solid white; border-radius: 10px; padding: 10px; color: white; font-family: 'Press Start 2P'; font-size: 12px; z-index: 80; text-align: center; }
-         #online-round-text { color: yellow; margin-bottom: 5px; }
-         #online-score-board { display: flex; justify-content: space-between; padding: 0 10px; margin-top: 5px; }
+         /* ONLINE UI (UPDATED WITH NAMES) */
+         #online-ui { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 380px; background: rgba(0,0,0,0.7); border: 2px solid white; border-radius: 10px; padding: 10px; color: white; font-family: 'Press Start 2P'; font-size: 12px; z-index: 80; text-align: center; }
+         #online-round-text { color: yellow; margin-bottom: 5px; font-size: 14px; text-shadow: 2px 2px 0 #000; }
+         #online-score-board { display: flex; justify-content: space-between; padding: 0 10px; margin-top: 5px; align-items: flex-end; }
+         .online-p-box { text-align: left; width: 45%; }
+         .online-e-box { text-align: right; width: 45%; }
+         .online-name { font-size: 10px; color: #ccc; margin-bottom: 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-         /* PAUSE MENU */
+         /* SETTINGS MENU (Formerly Pause Menu) */
          #pause-menu { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 150; flex-direction: column; align-items: center; justify-content: center; }
          #pause-menu h1 { color: white; font-family: 'Press Start 2P', cursive; margin-bottom: 30px; text-shadow: 4px 4px 0px #f7941d; }
          .pause-options { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
@@ -127,7 +148,7 @@
              .secondary-btn { font-size: 14px; }
              #dash-btn { width: 60px; height: 60px; font-size: 10px; bottom: 10px; right: 10px; }
              #bomb-btn { width: 60px; height: 45px; font-size: 10px; bottom: 10px; left: 10px; }
-             #pause-btn { font-size: 10px; padding: 5px 10px; }
+             #settings-btn { font-size: 14px; padding: 5px 10px; }
              #user-profile { transform: scale(0.8); transform-origin: top right; }
              .menu-stats { gap: 8px; flex-wrap: wrap; justify-content: center; }
              .stat-box { font-size: 11px; min-width: 50px; }
@@ -146,7 +167,7 @@
          </div>
 
          <button id="delete-boss-btn" onclick="hitBossTwo()">DELETE</button>
-         <button id="pause-btn" onclick="togglePause()">||</button>
+         <button id="settings-btn" onclick="togglePause()">⚙️</button>
          <button id="dash-btn" onclick="triggerDash()">DASH</button>
          <button id="bomb-btn" onclick="useWallDestruction()">BOMB</button>
 
@@ -176,14 +197,20 @@
          <div id="online-ui">
              <div id="online-round-text">ROUND 1</div>
              <div id="online-score-board">
-                 <div style="text-align:left;">YOU<br><span id="p-score" style="color:lime; font-size:16px;">0</span></div>
-                 <div style="text-align:right;">OPPONENT<br><span id="e-score" style="color:red; font-size:16px;">0</span></div>
+                 <div class="online-p-box">
+                     <div id="p-name" class="online-name">YOU</div>
+                     <span id="p-score" style="color:lime; font-size:16px;">0</span>
+                 </div>
+                 <div class="online-e-box">
+                     <div id="e-name" class="online-name">OPPONENT</div>
+                     <span id="e-score" style="color:red; font-size:16px;">0</span>
+                 </div>
              </div>
-             <div style="font-size:10px; color:#aaa; margin-top:5px;">Target: Beat Opponent Score</div>
+             <div style="font-size:10px; color:#aaa; margin-top:5px;">Target: Don't Crash!</div>
          </div>
 
          <div id="pause-menu">
-             <h1>PAUSED</h1>
+             <h1>SETTINGS</h1>
              <div class="pause-options">
                  <div class="toggle-row">
                      <span>MUSIC</span>
@@ -260,8 +287,7 @@
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
      <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
-     <script>
+<script>
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyBx7WtHKQW4xqrSul6G345P5fAuDU0Sta4",
@@ -283,6 +309,10 @@
         let activeMatchID = null;
         let myOnlineRole = null; // 'host' or 'guest'
         let unsubscribeMatch = null;
+        let opponentName = "Searching...";
+        let myWins = 0;
+        let enemyWins = 0;
+        let trophyProcessed = false; // FIX: Prevents infinite trophy glitch
 
         // SAFE INITIALIZATION
         try {
@@ -542,6 +572,7 @@
         let enemyTargetScore = 0;
         let enemyCurrentVisibleScore = 0;
         let enemyHasCrashed = false;
+        let myHasCrashed = false;
 
         const SKINS = {
             'default': { src: 'player.png', cost: 0, current: true, name: 'Original Cheetos' }, 
@@ -597,7 +628,8 @@
             { id: 'error_death', title: 'OOPS AN ERROR', desc: '???', unlocked: false },
             { id: 'bite_98', title: 'THE BITE OF 98', desc: '???', unlocked: false }
         ];
-let savedAchievements = [];
+
+        let savedAchievements = [];
         try {
             savedAchievements = JSON.parse(localStorage.getItem('flappyAchievements')) || [];
             ALL_ACHIEVEMENTS.forEach(ach => { if (savedAchievements.includes(ach.id)) ach.unlocked = true; });
@@ -640,7 +672,6 @@ let savedAchievements = [];
             }
 
             // --- CRASH FIX: SAFE IMAGE RENDERING ---
-            // If image is not loaded or has 0 width, use fallback dimensions
             let drawWidth = 50; let drawHeight = 50;
             let imgReady = (this.MyImg && this.MyImg.complete && this.MyImg.naturalWidth !== 0);
             
@@ -674,7 +705,6 @@ let savedAchievements = [];
                 if (imgReady) {
                     ctx.drawImage(this.MyImg, -drawWidth / 2, -drawHeight / 2);
                 } else {
-                    // FALLBACK PLACEHOLDER (Prevents Crash)
                     ctx.fillStyle = "#FF00FF"; 
                     ctx.fillRect(-20, -20, 40, 40);
                 }
@@ -688,7 +718,6 @@ let savedAchievements = [];
         function ImagesTouching(thing1, thing2) {
             if (!thing1.visible || !thing2.visible) return false; 
             let w1, h1, w2, h2;
-            // Safe dimensions
             if (thing1.MyImg && thing1.MyImg.complete && thing1.MyImg.naturalWidth !== 0) { w1 = thing1.MyImg.width; h1 = thing1.MyImg.height; } else { w1 = 40; h1 = 40; }
             if (thing2.isText) { w2 = 180; h2 = 40; } 
             else if (thing2.isError) { w2 = 100; h2 = 100; } 
@@ -706,21 +735,25 @@ let savedAchievements = [];
             document.getElementById('achievementsModal').style.display = 'block';
         }
 
+        // --- UPDATED SETTINGS/PAUSE TOGGLE ---
         window.togglePause = function() {
             playClickSound();
-            if (game_mode !== 'running' && game_mode !== 'boss' && game_mode !== 'online_match') return;
+            // Works in Menu AND Game
             isPaused = !isPaused; 
             let menu = document.getElementById('pause-menu');
-            let btn = document.getElementById('pause-btn');
+            let btn = document.getElementById('settings-btn'); // Renamed ID
 
             if (isPaused) { 
                 menu.style.display = 'flex';
-                btn.innerText = "►"; 
-                bgMusic.pause(); voidMusic.pause(); breathingSound.pause(); 
+                // Only pause music if we are actually in a game
+                if (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match') {
+                     bgMusic.pause(); voidMusic.pause(); breathingSound.pause(); 
+                }
             } else { 
                 menu.style.display = 'none';
-                btn.innerText = "||"; 
-                if (!musicMuted) { if (currentBGIndex === 4) voidMusic.play(); else bgMusic.play(); } 
+                if (!musicMuted && (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match')) { 
+                    if (currentBGIndex === 4) voidMusic.play(); else bgMusic.play(); 
+                } 
             }
         }
 
@@ -738,7 +771,6 @@ let savedAchievements = [];
 
             isPaused = false;
             document.getElementById('pause-menu').style.display = 'none';
-            document.getElementById('pause-btn').innerText = "||";
             document.getElementById('online-ui').style.display = 'none';
 
             document.getElementById('landing-page').style.display = 'flex'; 
@@ -774,7 +806,7 @@ let savedAchievements = [];
         
         function startSecretEnding() {
             unlockAchievement('bite_98'); 
-            document.getElementById('pause-btn').style.display = 'none'; 
+            document.getElementById('settings-btn').style.display = 'none'; 
             document.getElementById('dash-btn').style.display = 'none'; 
             document.getElementById('bomb-btn').style.display = 'none';
             
@@ -795,7 +827,6 @@ let savedAchievements = [];
             if (outcome > 0) { showCheatFeedback("WARP AHEAD! +10"); triggerFlash("cyan"); } else { showCheatFeedback("WARP BACK! -10"); triggerFlash("purple"); transitionText = AREA_NAMES[currentBGIndex]; transitionTimer = 80; }
         }
 
-        // --- NEW MODE SELECTION LOGIC ---
         window.openModeSelect = function() {
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('mode-select-modal').style.display = 'flex';
@@ -813,13 +844,13 @@ let savedAchievements = [];
             mainMenuMusic.currentTime = 0;
             reset_game();
             game_mode = 'running';
-            document.getElementById('pause-btn').style.display = 'block';
+            document.getElementById('settings-btn').style.display = 'block';
             if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
             if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
             if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
         }
 
-        // --- REAL ONLINE MATCHMAKING ---
+        // --- UPDATED ONLINE MATCHMAKING (NAMES + 3 ROUNDS) ---
         window.startOnlineMode = async function() {
             if (!auth || !currentUser) return alert("You must login to play Online!");
             if (!db) return alert("Database offline!");
@@ -847,10 +878,14 @@ let savedAchievements = [];
                     const matchDoc = openMatches.docs[0];
                     activeMatchID = matchDoc.id;
                     myOnlineRole = 'guest';
+                    // We need to set initial round data
                     await db.collection('matches').doc(activeMatchID).update({
                         guestId: currentUser.uid,
                         guestName: currentUser.displayName,
-                        status: 'starting'
+                        status: 'starting',
+                        round: 1,
+                        hostWins: 0,
+                        guestWins: 0
                     });
                 } else {
                     // CREATE MATCH
@@ -860,7 +895,11 @@ let savedAchievements = [];
                         status: 'searching',
                         hostScore: 0,
                         guestScore: 0,
+                        hostStatus: 'alive',
+                        guestStatus: 'alive',
                         round: 1,
+                        hostWins: 0,
+                        guestWins: 0,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     activeMatchID = newMatch.id;
@@ -873,23 +912,44 @@ let savedAchievements = [];
                         const data = doc.data();
                         if (!data) return;
 
+                        // NAME SYNC
+                        if (myOnlineRole === 'host') opponentName = data.guestName || "Opponent";
+                        else opponentName = data.hostName || "Opponent";
+
                         if (data.status === 'starting' && document.getElementById('temp-online-loader')) {
                             // Start Game
                             document.getElementById('temp-online-loader').remove();
+                            trophyProcessed = false; // Reset trophy lock
                             startGameLoopOnline();
                         }
                         
-                        // Update Scores Realtime
+                        // Update Scores & Status
                         if (myOnlineRole === 'host') {
                             online_score_enemy = data.guestScore || 0;
-                            enemyCurrentVisibleScore = online_score_enemy; // Sync visual
+                            enemyCurrentVisibleScore = online_score_enemy;
+                            enemyWins = data.guestWins || 0;
+                            myWins = data.hostWins || 0;
+                            if (data.guestStatus === 'crashed') enemyHasCrashed = true; else enemyHasCrashed = false;
                         } else {
                             online_score_enemy = data.hostScore || 0;
                             enemyCurrentVisibleScore = online_score_enemy;
+                            enemyWins = data.hostWins || 0;
+                            myWins = data.guestWins || 0;
+                            if (data.hostStatus === 'crashed') enemyHasCrashed = true; else enemyHasCrashed = false;
                         }
 
-                        // Round / End Logic can be expanded here
-                        // For simplicity, we just sync scores and check win conditions locally in game loop
+                        // Round Tracking
+                        if (data.round > online_round) {
+                            // New Round Detected
+                            online_round = data.round;
+                            resetOnlineRound();
+                            triggerFlash("white");
+                        }
+                        
+                        // Game Over Check (someone reached 2 wins)
+                        if ((data.hostWins >= 2 || data.guestWins >= 2) && data.status !== 'ended') {
+                             endMatchLogic(data);
+                        }
                     });
 
             } catch(e) {
@@ -905,13 +965,15 @@ let savedAchievements = [];
              online_score_player = 0; 
              online_score_enemy = 0; 
              online_round = 1;
+             myWins = 0;
+             enemyWins = 0;
              
              resetOnlineRound();
 
              document.getElementById('online-ui').style.display = 'block';
              updateOnlineUI();
 
-             document.getElementById('pause-btn').style.display = 'block';
+             document.getElementById('settings-btn').style.display = 'block';
              if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
              if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
 
@@ -919,8 +981,17 @@ let savedAchievements = [];
         }
 
         function updateOnlineUI() {
-            document.getElementById('p-score').innerText = online_score_player;
-            document.getElementById('e-score').innerText = online_score_enemy;
+            document.getElementById('p-score').innerText = online_score_player; // This is actually ROUND wins in standard UI, but let's keep it as current score for now
+            // Better UI: Show Round Wins next to names
+            document.getElementById('p-name').innerText = "YOU (" + myWins + ")";
+            document.getElementById('e-name').innerText = opponentName + " (" + enemyWins + ")";
+            
+            document.getElementById('p-score').innerText = currentScore;
+            
+            // Handle enemy score display
+            if(enemyHasCrashed) document.getElementById('e-score').innerText = online_score_enemy + " (X)";
+            else document.getElementById('e-score').innerText = online_score_enemy;
+            
             document.getElementById('online-round-text').innerText = "ROUND " + online_round + " / 3";
         }
 
@@ -931,54 +1002,127 @@ let savedAchievements = [];
             currentScore = 0;
             lastPipeY = 250;
             add_pipe(CANVAS_WIDTH, 100, 140);
+            
+            myHasCrashed = false;
+            enemyHasCrashed = false;
+            
+            // Update Status in DB
+            if(activeMatchID) {
+                let updateData = {};
+                if(myOnlineRole === 'host') { updateData.hostStatus = 'alive'; updateData.hostScore = 0; }
+                else { updateData.guestStatus = 'alive'; updateData.guestScore = 0; }
+                db.collection('matches').doc(activeMatchID).update(updateData);
+            }
+            
             updateOnlineUI();
             flashTimer = 0;
+        }
+// --- NEW FAIR WIN/LOSS LOGIC ---
+        function handleOnlineDeath() {
+            myHasCrashed = true;
+            playClickSound(); // death sound replacement
+
+            if (!activeMatchID) return triggerGameOver("Connection Error");
+
+            // 1. Update my status in DB
+            let updateData = {};
+            if (myOnlineRole === 'host') { updateData.hostStatus = 'crashed'; updateData.hostScore = currentScore; }
+            else { updateData.guestStatus = 'crashed'; updateData.guestScore = currentScore; }
             
-            // In real online, we don't set enemy target score, we wait for listener updates
-            enemyCurrentVisibleScore = 0; 
-            enemyHasCrashed = false;
+            db.collection('matches').doc(activeMatchID).update(updateData).then(() => {
+                // 2. Check Opponent Status
+                checkRoundResult();
+            });
+
+            // Show Waiting Screen
+            ctx.fillStyle = "rgba(0,0,0,0.7)";
+            ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
+            ctx.font = "20px 'Press Start 2P'";
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.fillText("Waiting for Opponent...", myCanvas.width/2, myCanvas.height/2);
         }
 
-        function handleOnlineWin(winner) {
-            playPowerUpSound();
-            if (winner === 'player') {
-                online_score_player++;
-                triggerFlash("lime");
-                showCheatFeedback("ROUND WON!");
-            } else {
-                online_score_enemy++;
-                triggerFlash("red");
-                showCheatFeedback("ROUND LOST!");
-            }
-            
-            online_round++;
-            updateOnlineUI();
-
-            if (online_score_player >= 2 || online_score_enemy >= 2) {
-                // MATCH OVER
-                let wonMatch = online_score_player > online_score_enemy;
-                let trophyChange = wonMatch ? 25 : -15;
-                if (!wonMatch && onlineTrophies < 15) trophyChange = -onlineTrophies; 
-
-                onlineTrophies += trophyChange;
-                localStorage.setItem('flappyTrophies', onlineTrophies);
-                saveUserData();
-
-                // Close match in DB
-                if (activeMatchID) {
-                    db.collection('matches').doc(activeMatchID).update({ status: 'ended' });
-                    if(unsubscribeMatch) unsubscribeMatch();
+        function checkRoundResult() {
+            // This runs whenever I die, OR whenever the opponent updates (via listener)
+            if (!myHasCrashed) {
+                // If I am alive, but opponent crashed, check if I already won by score
+                if (enemyHasCrashed && currentScore > online_score_enemy) {
+                    resolveRound('win');
                 }
-
-                setTimeout(() => {
-                     let msg = wonMatch ? `VICTORY! +${trophyChange} 🏆` : `DEFEAT... ${trophyChange} 🏆`;
-                     triggerGameOver(msg);
-                     document.getElementById('online-ui').style.display = 'none';
-                }, 1500);
-            } else {
-                // Next Round
-                setTimeout(resetOnlineRound, 1500);
+                return;
             }
+
+            // If I crashed...
+            if (enemyHasCrashed) {
+                // BOTH CRASHED: Compare Scores
+                if (currentScore > online_score_enemy) resolveRound('win');
+                else if (currentScore < online_score_enemy) resolveRound('loss');
+                else resolveRound('draw'); // Rare tie
+            } else {
+                // I crashed, enemy alive. 
+                // Wait for listener to trigger checkRoundResult again when enemy dies or quits
+            }
+        }
+
+        function resolveRound(result) {
+            // Prevent double resolution
+            // In a real app, we'd use Cloud Functions to be secure. 
+            // Here, the host handles the DB update to avoid race conditions.
+            if (myOnlineRole !== 'host') return; 
+
+            // Calculate new wins
+            let newHostWins = myWins;
+            let newGuestWins = enemyWins;
+
+            if (result === 'win') newHostWins++;
+            else if (result === 'loss') newGuestWins++;
+            else { /* Tie - replay round or no points? Let's give both a point to be chaotic or replay. Let's replay. */ }
+            
+            // Draw case handling (tie = no wins incremented, just next round)
+            // But if score was different:
+            if (currentScore > online_score_enemy) newHostWins = myWins + 1;
+            else if (online_score_enemy > currentScore) newGuestWins = enemyWins + 1;
+            
+            // NOTE: The listener handles the 'guest' side visual updates. 
+            // Host pushes the truth to DB.
+            db.collection('matches').doc(activeMatchID).update({
+                round: online_round + 1,
+                hostWins: newHostWins,
+                guestWins: newGuestWins,
+                hostStatus: 'alive', // Reset for next round
+                guestStatus: 'alive'
+            });
+        }
+
+        function endMatchLogic(data) {
+            if (trophyProcessed) return;
+            trophyProcessed = true;
+
+            let amIHost = (myOnlineRole === 'host');
+            let hostWon = (data.hostWins >= 2);
+            let iWon = (amIHost && hostWon) || (!amIHost && !hostWon);
+
+            let trophyChange = iWon ? 25 : -15;
+            if (!iWon && onlineTrophies < 15) trophyChange = -onlineTrophies;
+
+            onlineTrophies += trophyChange;
+            localStorage.setItem('flappyTrophies', onlineTrophies);
+            saveUserData();
+
+            // Mark match as ended so we don't process again
+            if (amIHost) {
+                db.collection('matches').doc(activeMatchID).update({ status: 'ended' });
+            }
+            if(unsubscribeMatch) unsubscribeMatch();
+
+            setTimeout(() => {
+                 let msg = iWon ? `VICTORY! +${trophyChange} 🏆` : `DEFEAT... ${trophyChange} 🏆`;
+                 triggerGameOver(msg);
+                 document.getElementById('online-ui').style.display = 'none';
+                 // Reset vars
+                 activeMatchID = null;
+            }, 1000);
         }
         
         // --- FIXED TOGGLE FUNCTIONS ---
@@ -1054,7 +1198,7 @@ let savedAchievements = [];
 
                 let img = (isBoss2 && BOSS2_IMG.complete && BOSS2_IMG.naturalWidth !== 0) ? BOSS2_IMG : BOSS_IMG; 
                 if (img.complete && img.naturalWidth !== 0) ctx.drawImage(img, boss.x, boss.y, boss.width, boss.height);
-                else { ctx.fillStyle = "red"; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); } // Placeholder boss
+                else { ctx.fillStyle = "red"; ctx.fillRect(boss.x, boss.y, boss.width, boss.height); } 
 
                 if (bossIntroState === 0) { bossIntroState = 1; bossIntroTimer = 120; }
                 if (!isBoss2) { 
@@ -1062,14 +1206,12 @@ let savedAchievements = [];
                     else if (bossIntroState === 2) { drawDialogueBox("I was waiting for you"); bossIntroTimer--; if(bossIntroTimer<=0){bossIntroState=5;} } 
                 } 
                 else { 
-                    // --- BOSS 2 LOGIC FIX ---
                     if (bossIntroState === 1) { 
                         drawDialogueBox("you are getting out of control"); bossIntroTimer--; 
                         if(bossIntroTimer<=0){bossIntroState=2; bossIntroTimer=120;} 
                     } 
                     else if (bossIntroState === 2) { 
                         drawDialogueBox("you werent supposed to come HERE"); bossIntroTimer--; 
-                        // FIXED: Progress to State 3, not State 2 again (Infinite Loop Fix)
                         if(bossIntroTimer<=0){bossIntroState=3; bossIntroTimer=120;} 
                     } 
                     else if (bossIntroState === 3) { 
@@ -1084,7 +1226,7 @@ let savedAchievements = [];
                 }
                 return;
             }
-if (bossIntroState === 4) { 
+            if (bossIntroState === 4) { 
                 document.getElementById('dash-btn').style.display = 'none';
                 document.getElementById('bomb-btn').style.display = 'none';
 
@@ -1188,12 +1330,8 @@ if (bossIntroState === 4) {
                     startSecretEnding(); return; 
                 }
                 if (game_mode === 'online_match') {
-                      // Check scores to determine round winner
-                      if (currentScore > online_score_enemy) {
-                          handleOnlineWin('player');
-                      } else {
-                          handleOnlineWin('enemy');
-                      }
+                      // NEW LOGIC: Don't lose instantly. Call death handler.
+                      handleOnlineDeath();
                       return;
                 }
                 bird.velocity_y = 0; triggerGameOver("Game Over"); 
@@ -1239,7 +1377,7 @@ if (bossIntroState === 4) {
             
             saveUserData(); 
             deathMessage = msg || "Game Over"; game_mode = 'over';
-            document.getElementById('delete-boss-btn').style.display = 'none'; document.getElementById('dash-btn').style.display = 'none'; document.getElementById('pause-btn').style.display = 'none'; document.getElementById('bomb-btn').style.display = 'none'; document.getElementById('game-container').className = ""; 
+            document.getElementById('delete-boss-btn').style.display = 'none'; document.getElementById('dash-btn').style.display = 'none'; document.getElementById('settings-btn').style.display = 'none'; document.getElementById('bomb-btn').style.display = 'none'; document.getElementById('game-container').className = ""; 
             
             // Switch music back to menu
             if(!musicMuted) mainMenuMusic.play().catch(e=>{});
@@ -1254,7 +1392,7 @@ if (bossIntroState === 4) {
                     if (isShieldActive || isDashActive) { if (isShieldActive) { deactivateShield(); pipes[i].visible = false; } continue; } 
                     else { if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { currentLives--; if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));} pipes[i].visible = false; return; } 
                         if (game_mode === 'online_match') {
-                            if (currentScore > online_score_enemy) { handleOnlineWin('player'); } else { handleOnlineWin('enemy'); }
+                            handleOnlineDeath();
                             return;
                         }
                         if(!sfxMuted){damageSound.currentTime = 0; damageSound.play().catch(e=>console.warn(e));} triggerGameOver("Game Over"); return; 
@@ -1294,6 +1432,11 @@ if (bossIntroState === 4) {
                             db.collection('matches').doc(activeMatchID).update({ hostScore: currentScore });
                         } else {
                             db.collection('matches').doc(activeMatchID).update({ guestScore: currentScore });
+                        }
+                        
+                        // NEW LOGIC: Check for instant win during play
+                        if (enemyHasCrashed && currentScore > online_score_enemy) {
+                            checkRoundResult(); // I already beat them
                         }
                     }
                 }
@@ -1353,7 +1496,7 @@ if (bossIntroState === 4) {
             victoryTimer = 0; currentBGIndex = 0; transitionText = AREA_NAMES[0]; transitionTimer = 80;
             updateDifficulty(); isPaused = false; 
             document.getElementById('pause-menu').style.display = 'none';
-            document.getElementById('pause-btn').innerText = "||";
+            document.getElementById('settings-btn').innerText = "⚙️"; // Reset icon
             if (potionTimeoutID) clearTimeout(potionTimeoutID);
             if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES; else currentLives = 0;
             
@@ -1397,22 +1540,22 @@ if (bossIntroState === 4) {
                         break;
                     case 'online_match':
                         // Online Game Logic
-                        time_game_last_running = new Date(); bottom_bar_offset += pipe_speed * speedMultiplier;
-                        for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); } 
-                        pipe_spawn_timer += (1000 / FPS) * speedMultiplier; 
-                        if (pipe_spawn_timer > currentSpawnInterval) { let gap_size = 140; let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; add_pipe(myCanvas.width, top_of_gap, gap_size); pipe_spawn_timer = 0; }
-                        make_bird_slow_and_fall(); 
-                        check_for_end_game(); 
-                        check_for_score_increase();
-                        [pipes, shields, stars, potions, slowPotions].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
+                        if (!myHasCrashed) {
+                            time_game_last_running = new Date(); bottom_bar_offset += pipe_speed * speedMultiplier;
+                            for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); } 
+                            pipe_spawn_timer += (1000 / FPS) * speedMultiplier; 
+                            if (pipe_spawn_timer > currentSpawnInterval) { let gap_size = 140; let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; add_pipe(myCanvas.width, top_of_gap, gap_size); pipe_spawn_timer = 0; }
+                            make_bird_slow_and_fall(); 
+                            check_for_end_game(); 
+                            check_for_score_increase();
+                            [pipes, shields, stars, potions, slowPotions].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
+                        } else {
+                            // I am dead, waiting loop
+                            handleOnlineDeath();
+                        }
                         
                         // REAL MATCH: We use the value sync'd from Firestore in startOnlineMode listeners
-                        if (!enemyHasCrashed) {
-                            // We now just display the realtime value
-                            if (!isNaN(online_score_enemy)) document.getElementById('e-score').innerText = online_score_enemy;
-                        } else {
-                             document.getElementById('e-score').innerText = online_score_enemy + " (CRASH)";
-                        }
+                        updateOnlineUI(); // Refreshes scores/names every frame
                         break;
                     case 'over':
                         make_bird_slow_and_fall(); ctx.font = '22px "Press Start 2P"'; ctx.fillStyle = 'red'; ctx.textAlign = 'center'; ctx.fillText(deathMessage, myCanvas.width / 2, 100); ctx.font = '30px Arial'; ctx.fillText('Score: ' + currentScore, myCanvas.width / 2, 160); ctx.font = '20px Arial'; ctx.fillStyle = 'white'; ctx.fillText('Tap to return to Menu', myCanvas.width / 2, 250); break;
@@ -1470,6 +1613,9 @@ if (bossIntroState === 4) {
             case 'running':
             case 'boss': 
             case 'online_match':
+                // In Online Match, input is disabled if I am dead
+                if (game_mode === 'online_match' && myHasCrashed) return;
+
                 if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
                     let current_jump = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_JUMP_AMOUNT : jump_amount; bird.velocity_y = current_jump;
                 }
