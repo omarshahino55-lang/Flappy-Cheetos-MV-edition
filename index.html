@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html> 
  <head> 
-     <title>Flying Cheetos: Online Mode</title> 
+     <title>Flying Cheetos: Online Fix</title> 
      <meta charset="utf-8"> 
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
      <meta name="apple-mobile-web-app-capable" content="yes">
@@ -250,7 +250,7 @@
                  <button class="enter-btn secondary-btn" style="background-color: #8e44ad;" onclick="playClickSound(); openChat()">GLOBAL CHAT</button>
              </div>
              
-             <div class="version-text">v4.22 Online Fixed</div>
+             <div class="version-text">v4.22 Online Fix</div>
 
              <div id="achievementsModal" class="modal">
                  <button class="close-btn" onclick="playClickSound(); closeModal('achievementsModal')">X</button>
@@ -306,12 +306,16 @@
         
         // --- REAL ONLINE VARIABLES ---
         let activeMatchID = null;
-        let myOnlineRole = null; // 'host' or 'guest'
+        let myOnlineRole = null; 
         let unsubscribeMatch = null;
         let opponentName = "Searching...";
         let myWins = 0;
         let enemyWins = 0;
         let trophyProcessed = false; 
+
+        // GHOST OPPONENT VARIABLES
+        let enemyGhostY = 250; // Starts in middle
+        let lastGhostUpdate = 0;
 
         // SAFE INITIALIZATION
         try {
@@ -731,37 +735,49 @@
             document.getElementById('achievementsModal').style.display = 'block';
         }
 
-        // --- UPDATED PAUSE/SETTINGS TOGGLE ---
+        // --- FIXED: TOGGLE PAUSE (Online Safe) ---
         window.togglePause = function() {
             playClickSound();
             
-            // If we are in MENU, just show the settings overlay, do NOT pause game logic (as none is running)
+            // If in Menu (Waiting), just show settings
             if (game_mode === 'waiting_for_website') {
-                 // Check if menu is already visible
                  let menu = document.getElementById('pause-menu');
                  if(menu.style.display === 'flex') {
-                     menu.style.display = 'none'; // Close it
+                     menu.style.display = 'none'; 
                  } else {
-                     menu.style.display = 'flex'; // Open it
-                     document.getElementById('resume-btn').style.display = 'none'; // HIDE RESUME IN MAIN MENU
+                     menu.style.display = 'flex'; 
+                     document.getElementById('resume-btn').style.display = 'none'; 
                  }
                  return;
             }
 
-            // Normal Game Pause Logic
+            // If ONLINE, Show Menu but DO NOT STOP GAME (Anti-Cheat / Sync)
+            if (game_mode === 'online_match') {
+                 let menu = document.getElementById('pause-menu');
+                 if(menu.style.display === 'flex') {
+                     menu.style.display = 'none'; 
+                 } else {
+                     menu.style.display = 'flex'; 
+                     document.getElementById('resume-btn').style.display = 'block'; 
+                 }
+                 // IMPORTANT: We do NOT set isPaused = true here.
+                 return;
+            }
+
+            // Normal Offline Game Pause
             isPaused = !isPaused; 
             let menu = document.getElementById('pause-menu');
 
             if (isPaused) { 
                 menu.style.display = 'flex';
-                document.getElementById('resume-btn').style.display = 'block'; // SHOW RESUME IN GAME
+                document.getElementById('resume-btn').style.display = 'block'; 
                 
-                if (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match') {
+                if (game_mode === 'running' || game_mode === 'boss') {
                      bgMusic.pause(); voidMusic.pause(); breathingSound.pause(); 
                 }
             } else { 
                 menu.style.display = 'none';
-                if (!musicMuted && (game_mode === 'running' || game_mode === 'boss' || game_mode === 'online_match')) { 
+                if (!musicMuted && (game_mode === 'running' || game_mode === 'boss')) { 
                     if (currentBGIndex === 4) voidMusic.play(); else bgMusic.play(); 
                 } 
             }
@@ -772,6 +788,9 @@
             voidMusic.pause(); voidMusic.currentTime = 0;
             breathingSound.pause(); breathingSound.currentTime = 0;
 
+            const loader = document.getElementById('temp-online-loader');
+            if(loader) loader.remove();
+
             if (activeMatchID && unsubscribeMatch) {
                 db.collection('matches').doc(activeMatchID).update({ status: 'ended' });
                 unsubscribeMatch();
@@ -781,8 +800,6 @@
             isPaused = false;
             document.getElementById('pause-menu').style.display = 'none';
             document.getElementById('online-ui').style.display = 'none';
-            
-            // FORCE SETTINGS BUTTON TO BE VISIBLE
             document.getElementById('settings-btn').style.display = 'block';
 
             document.getElementById('landing-page').style.display = 'flex'; 
@@ -790,13 +807,20 @@
             game_mode = 'waiting_for_website'; 
             reset_game();
             
-            // RESET BACKGROUND VISUALLY
             currentBGIndex = 0;
             if(backgroundImages[0] && backgroundImages[0].complete) {
                 ctx.drawImage(backgroundImages[0], 0, 0, myCanvas.width, myCanvas.height);
             }
             
             if(!musicMuted) mainMenuMusic.play().catch(e => console.log(e));
+        }
+
+        window.cancelMatchSearch = function() {
+             playClickSound();
+             const loader = document.getElementById('temp-online-loader');
+             if(loader) loader.remove();
+             document.getElementById('landing-page').style.display = 'flex';
+             game_mode = 'waiting_for_website';
         }
 
         window.hitBossTwo = function() {
@@ -846,9 +870,18 @@
         }
 
         window.openModeSelect = function() {
+            game_mode = 'waiting_for_website';
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('mode-select-modal').style.display = 'flex';
             document.getElementById('modeTrophyDisplay').innerText = onlineTrophies;
+            
+            ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+            if(backgroundImages[0] && backgroundImages[0].complete) {
+                ctx.drawImage(backgroundImages[0], 0, 0, myCanvas.width, myCanvas.height);
+            } else {
+                ctx.fillStyle = "#4ec0ca"; 
+                ctx.fillRect(0,0,myCanvas.width,myCanvas.height);
+            }
         }
 
         window.closeModeSelect = function() {
@@ -862,14 +895,13 @@
             mainMenuMusic.currentTime = 0;
             reset_game();
             game_mode = 'running';
-            // Ensure settings button is visible
             document.getElementById('settings-btn').style.display = 'block';
             if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
             if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { document.getElementById('bomb-btn').style.display = 'flex'; }
             if (!musicMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
         }
 
-        // --- UPDATED ONLINE MATCHMAKING WITH SELF-CHALLENGE FIX ---
+        // --- UPDATED ONLINE MATCHMAKING WITH GHOST LISTENER ---
         window.startOnlineMode = async function() {
             if (!auth || !currentUser) return alert("You must login to play Online!");
             if (!db) return alert("Database offline!");
@@ -878,34 +910,40 @@
             mainMenuMusic.pause(); 
             mainMenuMusic.currentTime = 0;
             
-            // Show REAL searching screen
             document.getElementById('landing-page').style.display = 'none'; 
             let loadScr = document.createElement('div');
             loadScr.id = "temp-online-loader";
-            loadScr.style.position = "absolute"; loadScr.style.top=0; loadScr.style.left=0; loadScr.style.width="100%"; loadScr.style.height="100%"; loadScr.style.background="black"; loadScr.style.color="white"; loadScr.style.display="flex"; loadScr.style.justifyContent="center"; loadScr.style.alignItems="center"; loadScr.style.fontFamily="'Press Start 2P'"; loadScr.innerHTML = "SEARCHING FOR OPPONENT...";
+            loadScr.style.position = "absolute"; loadScr.style.top=0; loadScr.style.left=0; loadScr.style.width="100%"; loadScr.style.height="100%"; loadScr.style.background="black"; loadScr.style.color="white"; loadScr.style.display="flex"; loadScr.style.flexDirection="column"; loadScr.style.justifyContent="center"; loadScr.style.alignItems="center"; loadScr.style.fontFamily="'Press Start 2P'"; 
+            
+            loadScr.innerHTML = `
+                <div style="margin-bottom:20px;">SEARCHING FOR OPPONENT...</div>
+                <div class="loader-spinner" style="width:40px;height:40px;border:4px solid white;border-top:4px solid transparent;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
+                <button onclick="cancelMatchSearch()" style="background:red;color:white;border:2px solid white;padding:10px 20px;font-family:'Press Start 2P';cursor:pointer;">CANCEL</button>
+                <style>@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}</style>
+            `;
             document.getElementById('game-container').appendChild(loadScr);
             
             try {
-                // 1. Look for an open match
                 const openMatches = await db.collection('matches')
                     .where('status', '==', 'searching')
                     .limit(1)
                     .get();
 
+                if (!document.getElementById('temp-online-loader')) {
+                    console.log("Search was cancelled by user. Aborting match creation.");
+                    return; 
+                }
+
                 if (!openMatches.empty) {
                     const matchDoc = openMatches.docs[0];
                     const data = matchDoc.data();
 
-                    // --- FIX: Check if this is my own ghost match ---
                     if (data.hostId === currentUser.uid) {
-                        console.log("Found stale self-match. Deleting and creating fresh.");
                         await db.collection('matches').doc(matchDoc.id).delete();
-                        // Recursive call to try again (creates new one)
                         document.getElementById('temp-online-loader').remove();
                         return startOnlineMode(); 
                     }
 
-                    // JOIN MATCH
                     activeMatchID = matchDoc.id;
                     myOnlineRole = 'guest';
                     await db.collection('matches').doc(activeMatchID).update({
@@ -917,7 +955,6 @@
                         guestWins: 0
                     });
                 } else {
-                    // CREATE MATCH
                     const newMatch = await db.collection('matches').add({
                         hostId: currentUser.uid,
                         hostName: currentUser.displayName,
@@ -935,24 +972,27 @@
                     myOnlineRole = 'host';
                 }
 
-                // Listen to match updates
                 unsubscribeMatch = db.collection('matches').doc(activeMatchID)
                     .onSnapshot((doc) => {
                         const data = doc.data();
                         if (!data) return;
 
-                        // NAME SYNC
                         if (myOnlineRole === 'host') opponentName = data.guestName || "Opponent";
                         else opponentName = data.hostName || "Opponent";
 
+                        // --- GHOST UPDATE ---
+                        if (myOnlineRole === 'host') {
+                            if (data.guestY !== undefined) enemyGhostY = data.guestY;
+                        } else {
+                            if (data.hostY !== undefined) enemyGhostY = data.hostY;
+                        }
+
                         if (data.status === 'starting' && document.getElementById('temp-online-loader')) {
-                            // Start Game
                             document.getElementById('temp-online-loader').remove();
                             trophyProcessed = false; 
                             startGameLoopOnline();
                         }
                         
-                        // Update Scores & Status
                         if (myOnlineRole === 'host') {
                             online_score_enemy = data.guestScore || 0;
                             enemyCurrentVisibleScore = online_score_enemy;
@@ -967,14 +1007,12 @@
                             if (data.hostStatus === 'crashed') enemyHasCrashed = true; else enemyHasCrashed = false;
                         }
 
-                        // Round Tracking
                         if (data.round > online_round) {
                             online_round = data.round;
                             resetOnlineRound();
                             triggerFlash("white");
                         }
                         
-                        // Game Over Check
                         if ((data.hostWins >= 2 || data.guestWins >= 2) && data.status !== 'ended') {
                              endMatchLogic(data);
                         }
@@ -982,6 +1020,8 @@
 
             } catch(e) {
                 console.error("Matchmaking error:", e);
+                const loader = document.getElementById('temp-online-loader');
+                if(loader) loader.remove();
                 alert("Matchmaking failed. Try again.");
                 quitToMenu();
             }
@@ -1001,7 +1041,6 @@
              document.getElementById('online-ui').style.display = 'block';
              updateOnlineUI();
 
-             // FORCE SETTINGS BUTTON
              document.getElementById('settings-btn').style.display = 'block';
              
              if (currentSkinKey === 'doordash' || currentSkinKey === 'black') { document.getElementById('dash-btn').style.display = 'flex'; } 
@@ -1011,31 +1050,33 @@
         }
 
         function updateOnlineUI() {
-            // Better UI: Show Round Wins next to names
             document.getElementById('p-name').innerText = "YOU (" + myWins + ")";
             document.getElementById('e-name').innerText = opponentName + " (" + enemyWins + ")";
-            
             document.getElementById('p-score').innerText = currentScore;
             
-            // Handle enemy score display
             if(enemyHasCrashed) document.getElementById('e-score').innerText = online_score_enemy + " (X)";
             else document.getElementById('e-score').innerText = online_score_enemy;
             
             document.getElementById('online-round-text').innerText = "ROUND " + online_round + " / 3";
         }
 
+        // --- FIX: ROUND 2 SPAWNS & SPEED RESET ---
         function resetOnlineRound() {
             pipes = [];
             bird.y = myCanvas.height / 2;
             bird.velocity_y = 0;
             currentScore = 0;
-            lastPipeY = 250;
+            // CRITICAL: Force reset Y and Speed
+            lastPipeY = 250; 
+            pipe_speed = -2;
+            speedMultiplier = 1;
+            
+            // Add initial pipe
             add_pipe(CANVAS_WIDTH, 100, 140);
             
             myHasCrashed = false;
             enemyHasCrashed = false;
             
-            // Update Status in DB
             if(activeMatchID) {
                 let updateData = {};
                 if(myOnlineRole === 'host') { updateData.hostStatus = 'alive'; updateData.hostScore = 0; }
@@ -1049,7 +1090,12 @@
 // --- NEW FAIR WIN/LOSS LOGIC ---
         function handleOnlineDeath() {
             myHasCrashed = true;
-            playClickSound(); // death sound replacement
+            
+            // FIX: Play correct damage sound instead of click
+            if(!sfxMuted) {
+                damageSound.currentTime = 0; 
+                damageSound.play().catch(e => console.warn(e));
+            }
 
             if (!activeMatchID) return triggerGameOver("Connection Error");
 
@@ -1073,27 +1119,21 @@
         }
 
         function checkRoundResult() {
-            // This runs whenever I die, OR whenever the opponent updates (via listener)
             if (!myHasCrashed) {
-                // If I am alive, but opponent crashed, check if I already won by score
                 if (enemyHasCrashed && currentScore > online_score_enemy) {
                     resolveRound('win');
                 }
                 return;
             }
 
-            // If I crashed...
             if (enemyHasCrashed) {
-                // BOTH CRASHED: Compare Scores
                 if (currentScore > online_score_enemy) resolveRound('win');
                 else if (currentScore < online_score_enemy) resolveRound('loss');
-                else resolveRound('draw'); // Draw counts as no-win or replay, we'll just give draw
+                else resolveRound('draw'); 
             } 
-            // If I crashed and enemy is alive, we wait for them to crash or beat my score.
         }
 
         function resolveRound(result) {
-            // Only Host updates the round to prevent DB conflicts
             if (myOnlineRole !== 'host') return; 
 
             let newHostWins = myWins;
@@ -1102,7 +1142,6 @@
             if (result === 'win') newHostWins++;
             else if (result === 'loss') newGuestWins++;
             
-            // Score tie-breaker override if needed (though usually result handles it)
             if (currentScore > online_score_enemy) newHostWins = myWins + 1;
             else if (online_score_enemy > currentScore) newGuestWins = enemyWins + 1;
             
@@ -1130,7 +1169,6 @@
             localStorage.setItem('flappyTrophies', onlineTrophies);
             saveUserData();
 
-            // Mark match as ended
             if (amIHost) {
                 db.collection('matches').doc(activeMatchID).update({ status: 'ended' });
             }
@@ -1343,7 +1381,6 @@
             saveUserData(); 
             deathMessage = msg || "Game Over"; game_mode = 'over';
             
-            // HIDE SETTINGS BUTTON ON GAME OVER SCREEN
             document.getElementById('settings-btn').style.display = 'none';
 
             document.getElementById('delete-boss-btn').style.display = 'none'; document.getElementById('dash-btn').style.display = 'none'; document.getElementById('bomb-btn').style.display = 'none'; document.getElementById('game-container').className = ""; 
@@ -1375,6 +1412,7 @@
             for (let i = portals.length - 1; i >= 0; i--) { portals[i].Do_Frame_Things(); if (ImagesTouching(bird, portals[i])) { triggerPortalEffect(); portals.splice(i, 1); } }
         }
 
+        // --- FIXED: ONLINE SPEED SCALING INCLUDED ---
         function check_for_score_increase() {
             for (var i = 0; i < pipes.length; i += 2) {
                 if (isBoss2 && pipes[i].isText) { const p = pipes[i]; if (p.x + 180 < bird.x && p.passed === false) { currentScore++; p.passed = true; } continue; }
@@ -1392,6 +1430,12 @@
                     if (game_mode === 'online_match' && activeMatchID) {
                         if (myOnlineRole === 'host') { db.collection('matches').doc(activeMatchID).update({ hostScore: currentScore }); } 
                         else { db.collection('matches').doc(activeMatchID).update({ guestScore: currentScore }); }
+                        
+                        // NEW: ONLINE SPEED SCALING
+                        if (currentScore % 10 === 0) {
+                            pipe_speed -= 0.5; // Faster!
+                        }
+
                         if (enemyHasCrashed && currentScore > online_score_enemy) { checkRoundResult(); }
                     }
                 }
@@ -1464,7 +1508,10 @@
             try {
                 if (game_mode === 'waiting_for_website') return; 
                 if (game_mode === 'shop' || game_mode === 'shop_from_menu') { display_shop(); return; }
-                if (isPaused) return; if (!ctx) return;
+                
+                // If paused in Single Player, stop frame. If Online, KEEP GOING but show menu
+                if (isPaused && game_mode !== 'online_match') return; 
+                if (!ctx) return;
                 
                 if (isDashActive) { speedMultiplier = 3; dashTimer--; if (dashTimer <= 0) { for (var i = 0; i < pipes.length; i++) { if (ImagesTouching(bird, pipes[i])) { pipes[i].visible = false; playPowerUpSound(); showCheatFeedback("SMASH!"); } } isDashActive = false; speedMultiplier = 1; } } else { if (!isSlowMotionActive) speedMultiplier = 1; }
                 ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
@@ -1499,6 +1546,28 @@
                             check_for_end_game(); 
                             check_for_score_increase();
                             [pipes, shields, stars, potions, slowPotions].forEach(arr => { for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].x < -100) arr.splice(i, 1); else if (arr !== pipes) arr[i].Do_Frame_Things(); } });
+                            
+                            // --- NEW: GHOST OPPONENT DRAWING ---
+                            // 1. Draw ghost
+                            if(!enemyHasCrashed) {
+                                ctx.save();
+                                ctx.globalAlpha = 0.4; // Faded
+                                ctx.drawImage(bird.MyImg, bird.x, enemyGhostY, 50, 50); // Using same skin logic for simplicity or default
+                                ctx.fillStyle = "white"; ctx.font = "10px Arial"; ctx.textAlign="center";
+                                ctx.fillText(opponentName, bird.x + 25, enemyGhostY - 5);
+                                ctx.restore();
+                            }
+
+                            // 2. Sync MY position (Throttled)
+                            let now = Date.now();
+                            if (now - lastGhostUpdate > 200 && activeMatchID) { // Update every 200ms
+                                lastGhostUpdate = now;
+                                let posData = {};
+                                if (myOnlineRole === 'host') posData.hostY = bird.y;
+                                else posData.guestY = bird.y;
+                                db.collection('matches').doc(activeMatchID).update(posData).catch(e=>{});
+                            }
+
                         } else {
                             handleOnlineDeath();
                         }
@@ -1539,7 +1608,9 @@
             if (MyEvent.target.tagName === 'TEXTAREA' || MyEvent.target.tagName === 'BUTTON' || MyEvent.target.tagName === 'INPUT') return;
             if (MyEvent.target.closest('.modal') || MyEvent.target.closest('#user-profile')) return;
             if (MyEvent.target.closest('#pause-menu') || MyEvent.target.closest('#mode-select-modal')) return;
-            if (isPaused) return; 
+            
+            // Allow input if online even if "paused" menu is open
+            if (isPaused && game_mode !== 'online_match') return; 
             
             let clickX = 0; let clickY = 0;
             if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
